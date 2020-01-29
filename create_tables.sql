@@ -1,5 +1,5 @@
 
-/* User table */
+-- User table
 create table if not exists Usr (
     id   SERIAL,
     user_name char(30) UNIQUE,
@@ -10,3 +10,13 @@ create table if not exists Usr (
     PRIMARY KEY (id)
 );
 
+-- Person Table 
+create table if not exists Person (
+    id  integer not null UNIQUE ,
+    phone_number char(30),
+    last_seen   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    PRIMARY KEY (id)
+);
