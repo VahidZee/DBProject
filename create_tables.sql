@@ -87,12 +87,12 @@ create table if not exists Administrator (
 );
 -- File Table
 create table if not exists File (
-    id          integer not null unique,
-    uploader    integer not null unique,
+    id          SERIAL,
+    uploader    integer unique,
     file_name   char(256),
     caption     text,
     file_type   char,   -- "I" for image, "A" for audio, "V" for video, "D" for document, "O" for others
-    address     char(1024) not null,
+    address     text not null,
     upload_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (uploader) references Usr (id)
         ON DELETE CASCADE
@@ -100,8 +100,38 @@ create table if not exists File (
     PRIMARY KEY (id)
 );
 
--- Member Table
-
+-- Message Table
+create table if not exists Message (
+    destination integer,
+    id    integer,
+    forwarded_source    integer,
+    forwarded_id        integer,
+    reply_to_chat integer,
+    reply_to_id integer,
+    from_usr integer,
+    attachment integer,
+    upload_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    edit_date timestamp,
+    text text,
+    seen_count integer default 0,
+    FOREIGN KEY (destination) references Chat (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (forwarded_source, forwarded_id) references Message (destination,id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (reply_to_chat, reply_to_id) references Message (destination,id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (from_usr) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (attachment) references File (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (destination,id),
+    PRIMARY KEY (destination,id)
+);
 
 -- Group Channel Picture Table
 create table if not exists GroupChannelPicture (
@@ -115,7 +145,7 @@ create table if not exists GroupChannelPicture (
     FOREIGN KEY (image) references File (id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    UNIQUE (chat, admin, image, change_date)
+    UNIQUE (chat, admin, image, change_date),
     PRIMARY KEY (chat, admin, image, change_date)
 );
 
@@ -130,7 +160,7 @@ create table if not exists ProfilePicture (
     FOREIGN KEY (image) references File (id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    UNIQUE (usr, image, change_date)
+    UNIQUE (usr, image, change_date),
     PRIMARY KEY (usr, image, change_date)
 );
 
@@ -145,7 +175,7 @@ create table if not exists Banned (
     FOREIGN KEY (chat, admin) references Administrator (chat, usr)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    UNIQUE (admin, chat, usr)
+    UNIQUE (admin, chat, usr),
     PRIMARY KEY (chat, admin, usr)
 );
 
@@ -159,7 +189,7 @@ create table if not exists Block (
     FOREIGN KEY (blocker) references Usr (id)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    UNIQUE (blocker, blockee)
+    UNIQUE (blocker, blockee),
     PRIMARY KEY (blocker, blockee)
 );
 
