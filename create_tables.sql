@@ -101,3 +101,65 @@ create table if not exists File (
 );
 
 -- Member Table
+
+
+-- Group Channel Picture Table
+create table if not exists GroupChannelPicture (
+    admin       integer not null,
+    chat        integer not null,
+    image       integer not null,
+    change_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP not null,
+    FOREIGN KEY (chat, admin) references Administrator (chat, usr)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (image) references File (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (chat, admin, image, change_date)
+    PRIMARY KEY (chat, admin, image, change_date)
+);
+
+-- Profile Picture Table
+create table if not exists ProfilePicture (
+    usr         integer not null,
+    image       integer not null,
+    change_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP not null,
+    FOREIGN KEY (usr) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (image) references File (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (usr, image, change_date)
+    PRIMARY KEY (usr, image, change_date)
+);
+
+-- Banned Table
+create table if not exists Banned (
+    admin       integer not null,
+    chat        integer not null,
+    usr         integer not null,
+    FOREIGN KEY (usr) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (chat, admin) references Administrator (chat, usr)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (admin, chat, usr)
+    PRIMARY KEY (chat, admin, usr)
+);
+
+-- Block Table
+create table if not exists Block (
+    blocker     integer not null,
+    blockee     integer not null,
+    FOREIGN KEY (blockee) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (blocker) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (blocker, blockee)
+    PRIMARY KEY (blocker, blockee)
+);
+
