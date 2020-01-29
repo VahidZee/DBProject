@@ -50,9 +50,9 @@ create table if not exists GroupChannel (
     id          integer not null unique,
     creator     integer not null unique,
     title       char(60) not null,
-    description text(300),
+    description text,
     is_private  bool,
-    inv_link    text(30) not null unique,
+    inv_link    text not null unique,
     user_name   char(60),
     FOREIGN KEY (id) references Chat (id)
         ON DELETE CASCADE
@@ -63,3 +63,27 @@ create table if not exists GroupChannel (
     PRIMARY KEY (id)
 );
 
+-- Administrator Table
+create table if not exists Administrator (
+    chat        integer not null,
+    usr         integer not null ,
+    promoted_by integer,
+    send_messages bool not null default true,
+    delete_messages bool not null default true,
+    ban bool not null default true,
+    add_members bool not null default true,
+    add_admins bool not null default true,
+    update_info bool not null default true,
+    FOREIGN KEY (chat) references Chat (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (usr) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (promoted_by) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    PRIMARY KEY (chat,usr)
+);
+
+-- Member Table
