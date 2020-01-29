@@ -85,10 +85,11 @@ create table if not exists Administrator (
         ON UPDATE CASCADE,
     PRIMARY KEY (chat,usr)
 );
+
 -- File Table
 create table if not exists File (
     id          SERIAL,
-    uploader    integer unique,
+    uploader    integer not null,
     file_name   char(256),
     caption     text,
     file_type   char,   -- "I" for image, "A" for audio, "V" for video, "D" for document, "O" for others
@@ -131,6 +132,23 @@ create table if not exists Message (
         ON UPDATE CASCADE,
     UNIQUE (destination,id),
     PRIMARY KEY (destination,id)
+);
+
+-- Pinned message Table
+create table if not exists PinnedMessage (
+    chat        integer not null ,
+    usr         integer not null,
+    message     integer not null,
+    pin_date    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP not null,
+    is_pinned   bool not null,
+    FOREIGN KEY (chat, usr) references Administrator (chat, usr)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (message) references Message (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (chat, usr, message, pin_date),
+    PRIMARY KEY (chat, usr, message, pin_date)
 );
 
 -- Group Channel Picture Table
