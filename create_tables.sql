@@ -101,6 +101,26 @@ create table if not exists File (
     PRIMARY KEY (id)
 );
 
+-- Member Table
+create table if not exists Member (
+    usr     integer not null,
+    chat    integer not null,
+    start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    added_by   integer,
+    last_read_message   integer,
+    FOREIGN KEY (usr) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (added_by) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (chat) references Chat (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    UNIQUE (usr,chat),
+    PRIMARY KEY (usr,chat)
+);
+
 -- Message Table
 create table if not exists Message (
     destination integer,
