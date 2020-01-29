@@ -20,3 +20,20 @@ create table if not exists Person (
         ON UPDATE CASCADE,
     PRIMARY KEY (id)
 );
+
+-- Bot Table
+create table if not exists Bot (
+    id  integer not null UNIQUE,
+    creator  integer not null,
+    access_token char(512) UNIQUE,
+    webhook_url text UNIQUE,
+    uses_polling boolean not null default true,
+    FOREIGN KEY (id) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (creator) references Person (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    PRIMARY KEY (id)
+);
+
