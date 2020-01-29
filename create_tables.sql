@@ -85,5 +85,19 @@ create table if not exists Administrator (
         ON UPDATE CASCADE,
     PRIMARY KEY (chat,usr)
 );
+-- File Table
+create table if not exists File (
+    id          integer not null unique,
+    uploader    integer not null unique,
+    file_name   char(256),
+    caption     text,
+    file_type   char,   -- "I" for image, "A" for audio, "V" for video, "D" for document, "O" for others
+    address     char(1024) not null,
+    upload_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (uploader) references Usr (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    PRIMARY KEY (id)
+);
 
 -- Member Table
