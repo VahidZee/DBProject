@@ -15,8 +15,8 @@ create table if not exists Usr
 drop table if exists Person cascade;
 create table if not exists Person
 (
-    id        integer not null UNIQUE,
-    phone     char(30),
+    id        integer  not null UNIQUE,
+    phone     char(30) not null unique,
     last_seen TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id) references Usr (id)
         ON DELETE CASCADE
