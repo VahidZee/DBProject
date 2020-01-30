@@ -1,5 +1,5 @@
 -- User table
-drop table if exists  Usr cascade;
+drop table if exists Usr cascade;
 create table if not exists Usr
 (
     id         SERIAL,
@@ -57,7 +57,7 @@ drop table if exists GroupChannel cascade;
 create table if not exists GroupChannel
 (
     id          integer  not null unique,
-    creator     integer  not null unique,
+    creator     integer  not null,
     title       char(60) not null,
     description text,
     is_private  bool,
@@ -239,8 +239,8 @@ create table if not exists Banned
     FOREIGN KEY (chat, admin) references Administrator (chat, usr)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
-    UNIQUE (admin, chat, usr),
-    PRIMARY KEY (chat, admin, usr)
+    UNIQUE (chat, usr),
+    PRIMARY KEY (chat, usr)
 );
 
 -- Block Table
