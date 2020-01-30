@@ -1,4 +1,5 @@
 -- User table
+drop table if exists  Usr cascade;
 create table if not exists Usr
 (
     id         SERIAL,
@@ -11,6 +12,7 @@ create table if not exists Usr
 );
 
 -- Person Table
+drop table if exists Person cascade;
 create table if not exists Person
 (
     id        integer not null UNIQUE,
@@ -23,6 +25,7 @@ create table if not exists Person
 );
 
 -- Bot Table
+drop table if exists Bot cascade;
 create table if not exists Bot
 (
     id           integer not null UNIQUE,
@@ -41,6 +44,7 @@ create table if not exists Bot
 
 
 -- Chat Table
+drop table if exists Chat cascade;
 create table if not exists Chat
 (
     id        SERIAL,
@@ -49,6 +53,7 @@ create table if not exists Chat
 );
 
 -- Group or Channel Table
+drop table if exists GroupChannel cascade;
 create table if not exists GroupChannel
 (
     id          integer  not null unique,
@@ -68,6 +73,7 @@ create table if not exists GroupChannel
 );
 
 -- Administrator Table
+drop table if exists Administrator cascade;
 create table if not exists Administrator
 (
     chat            integer not null,
@@ -92,6 +98,7 @@ create table if not exists Administrator
 );
 
 -- File Table
+drop table if exists File cascade;
 create table if not exists File
 (
     id          SERIAL,
@@ -108,6 +115,7 @@ create table if not exists File
 );
 
 -- Member Table
+drop table if exists Message cascade;
 create table if not exists Member
 (
     usr               integer not null,
@@ -129,6 +137,7 @@ create table if not exists Member
 );
 
 -- Message Table
+drop table if exists Message cascade;
 create table if not exists Message
 (
     destination      integer not null,
@@ -163,6 +172,7 @@ create table if not exists Message
 );
 
 -- Pinned message Table
+drop table if exists PinnedMessage cascade;
 create table if not exists PinnedMessage
 (
     chat         integer not null,
@@ -182,6 +192,7 @@ create table if not exists PinnedMessage
 );
 
 -- Group Channel Picture Table
+drop table if exists GroupChannelPicture cascade;
 create table if not exists GroupChannelPicture
 (
     admin       integer                                            not null,
@@ -199,6 +210,7 @@ create table if not exists GroupChannelPicture
 );
 
 -- Profile Picture Table
+drop table if exists ProfilePicture cascade;
 create table if not exists ProfilePicture
 (
     usr         integer                                            not null,
@@ -215,6 +227,7 @@ create table if not exists ProfilePicture
 );
 
 -- Banned Table
+drop table if exists Banned cascade;
 create table if not exists Banned
 (
     admin integer not null,
@@ -231,6 +244,7 @@ create table if not exists Banned
 );
 
 -- Block Table
+drop table if exists Block cascade;
 create table if not exists Block
 (
     blocker integer not null,
