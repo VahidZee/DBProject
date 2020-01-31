@@ -145,7 +145,13 @@ def handle_show_my_chats():
 
 
 def handle_go_to_chat():
-    pass  # todo vahid
+    temp = input('-\tEnter your destination chat ID: ')
+    while not temp:
+        temp = input(
+            '\t\033[0;31mChat ID cannot be empty: \033[0m').strip()
+    cur.execute(f"SELECT chat from member WHERE chat='{temp}' and usr={user_id}")
+    if not cur.fetchone():
+        print('\t\033[0;31mYou are not a member of this chat ID\033[0m')
 
 
 def handle_leave_chat():
@@ -159,6 +165,8 @@ def change_menu(new_state, back=None):
         global back_target
         back_target = back if back else state
         state = new_state
+
+    return wrapped
 
 
 def handle_help():
