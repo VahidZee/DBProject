@@ -14,9 +14,12 @@ CHAT_ERROR = 3
 
 # global variables
 user_id = user_data = None
+current_chat_id = None
 state = 'base'
 old_state = None
 back_target = None
+disabled_commands = set()
+current_permissions = None
 
 
 # base menu commands
@@ -206,6 +209,8 @@ def handle_show_my_chats():
 
 
 def handle_go_to_chat():
+    global disabled_commands, current_permissions, state, current_chat_id
+    temp_dis = set()
     temp = input('-\tEnter your destination chat ID: ')
     while not temp:
         temp = input(
@@ -214,26 +219,66 @@ def handle_go_to_chat():
     if not cur.fetchone():
         print('\t\033[0;31mYou are not a member of this chat ID\033[0m')
         return
+    current_chat_id = chat_id = temp
+    chat_type = get_chat_type(chat_id)
+    if chat_type == PRIVATE:
+        disabled_commands = {'update_info', 'members', 'admins'}
+    elif chat_type == GROUP or chat_type == CHANNEL:
+        cur.execute(f"SELECT * from administrator WHERE chat='{chat_id}' and usr={user_id}")
+        current_permissions = permissions = cur.fetchone()
+        if permissions:
+            if not permissions[3] and chat_type == CHANNEL:
+                temp_dis.add('send_message')
+            if not permissions[4]:
+                temp_dis.add('delete_message')
+            if not permissions[5]:
+                temp_dis.add('banned_members')
+            if not permissions[6]:
+                temp_dis.add('add_member')
+            if not permissions[7]:
+                temp_dis.add('promote')
+            if not permissions[8]:
+                temp_dis.add('update_info')
+
+    state = 'inchat_menu'
 
 
 def handle_leave_chat():
     pass
 
 
+def handle_show_messages():
+    pass
+
+
+def handle_find_message():
+    pass
+
+
+def handle_send_message():
+    pass
+
+
+def handle_chat_info():
+    pass
+
+
 # global commands
-def change_menu(new_state, back=None):
+def change_menu(new_state, reset=True):
     def wrapped():
-        global state
-        global back_target
-        back_target = back if back else state
+        global state, current_permissions, current_chat_id
         state = new_state
+        if reset:
+            current_permissions = None
+            current_chat_id = None
 
     return wrapped
 
 
 def handle_help():
     for key, value in available_commands[state].items():
-        print(f'\t\033[1m{key.center(10, " ")}\033[0m\033[1m - \033[0m{value[1]}')
+        if key not in disabled_commands:
+            print(f'\t\033[1m{key.center(10, " ")}\033[0m\033[1m - \033[0m{value[1]}')
 
 
 def handle_state_transitions():
@@ -267,6 +312,19 @@ chats_menu_commands = {
     'help': (handle_help, 'print available commands'),
 }
 
+inchat_menu_commands = {
+    'messages': (handle_show_messages, 'show messages of this chat'),
+    'find_message': (handle_find_message, 'show messages of this chat'),
+    'members': (change_menu('members_menu'), 'show messages of this chat'),
+    'banned_members': (change_menu('members_menu'), 'show messages of this chat'),
+    'admins': (change_menu('admins_menu'), 'show messages of this chat'),
+    'info': (handle_chat_info, 'show information about this chat'),
+    'send_message': (handle_send_message, 'send a new message to this chat'),
+    'delete_message': (handle_send_message, 'delete a message from this chat'),
+    'back': (change_menu('admins_menu'), 'go back to main menu'),
+    'help': (handle_help, 'print available commands'),
+}
+
 profile_menu_commands = {
     'see': (handle_get_me, 'see your profile information'),
     'update': (handle_update_me, 'change your profile information'),
@@ -280,6 +338,7 @@ available_commands = {
     'menu': menu_commands,
     'profile_menu': profile_menu_commands,
     'chats_menu': chats_menu_commands,
+    'inchat_menu': inchat_menu_commands,
 }
 
 
