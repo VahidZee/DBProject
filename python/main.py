@@ -263,6 +263,8 @@ def handle_go_to_chat():
                 temp_dis.add('members')
             if not permissions[7]:
                 temp_dis.add('promote')
+                temp_dis.add( 'unpromote')
+                temp_dis.add('edit_admin')
             if not permissions[8]:
                 temp_dis.add('update_info')
             disabled_commands = temp_dis
@@ -708,7 +710,53 @@ def handle_show_admins():
 
 
 def handle_add_admin():
-    pass
+    temp = input('-\tUser id: ')
+    while not temp:
+        temp = input(
+            '\t\033[0;31mUser id cannot be empty: \033[0m').strip()
+    admin_id = temp
+    cur.execute(f"SELECT * from member WHERE chat={current_chat_id} and usr={admin_id}")
+    admin = cur.fetchone()
+    if not admin:
+        print('\t\033[0;31mThis user is not a member of this chat\033[0m')
+        return
+
+    send_messages = current_permissions[3]
+    delete_messages = current_permissions[4]
+    ban = current_permissions[5]
+    add_member = current_permissions[6]
+    add_admin = current_permissions[7]
+    update_info = current_permissions[8]
+
+    if send_messages:
+        temp = input('-\tCan this admin send messages (y/n): ')
+        send_messages = False if not temp or temp == 'n' else True
+    if delete_messages:
+        temp = input('-\tCan this admin delete messages (y/n): ')
+        delete_messages = False if not temp or temp == 'n' else True
+    if ban:
+        temp = input('-\tCan this admin ban users (y/n): ')
+        ban = False if not temp or temp == 'n' else True
+    if add_member:
+        temp = input('-\tCan this admin add new members (y/n): ')
+        add_member = False if not temp or temp == 'n' else True
+    if add_admin:
+        temp = input('-\tCan this admin add new admins (y/n): ')
+        add_admin = False if not temp or temp == 'n' else True
+    if update_info:
+        temp = input("-\tCan this admin update chat's info (y/n): ")
+        update_info = False if not temp or temp == 'n' else True
+    send_messages = 'FALSE' if not send_messages else 'TRUE'
+    delete_messages = 'FALSE' if not delete_messages else 'TRUE'
+    ban = 'FALSE' if not ban else 'TRUE'
+    add_member = 'FALSE' if not add_member else 'TRUE'
+    add_admin = 'FALSE' if not add_admin else 'TRUE'
+    update_info = 'FALSE' if not update_info else 'TRUE'
+
+    cur.execute(
+        f"INSERT INTO administrator values ({current_chat_id},{admin_id},{user_id},{send_messages},{delete_messages},{ban},{add_member},{add_admin},{update_info})")
+    conn.commit()
+    print('\tAdmin was added successfully')
 
 
 def handle_remove_admin():
@@ -726,13 +774,12 @@ def handle_remove_admin():
         print('\t\033[0;31mYou cannot remove this admins\033[0m')
         return
     if admin[1] == user_id:
-        print('\t\033[0;31mYou provoke your own rights\033[0m')
+        print('\t\033[0;31mYou cannot provoke your own rights\033[0m')
         return
     print('\tRemoving admin:')
     print_admin(admin)
     cur.execute(
-        f"DELETE from administrator ",
-        f"'WHERE chat={current_chat_id} and usr={admin_id}")
+        f"DELETE from administrator WHERE chat={current_chat_id} and usr={admin_id}")
     conn.commit()
     print('\tAdmin was removed successfully')
 
@@ -861,7 +908,7 @@ inchat_menu_commands = {
 }
 
 members_menu_commands = {
-    'show_members': (handle_show_members, 'show members of this chat'),
+    'show': (handle_show_members, 'show members of this chat'),
     'add_member': (handle_add_member, 'add a new member to this chat'),
     'back': (change_menu('inchat_menu', False), 'go back to chat'),
     'help': (handle_help, 'print available commands'),
@@ -879,10 +926,11 @@ admins_menu_commands = {
     'show': (handle_show_admins, 'show admins of this chat'),
     'promote': (handle_add_admin, 'add a new admin to this chat'),
     'unpromote': (handle_remove_admin, 'add a new admin to this chat'),
-    'edit': (handle_edit_admin, "update an admin's permissions"),
+    'edit_admin': (handle_edit_admin, "update an admin's permissions"),
     'back': (change_menu('inchat_menu', False), 'go back to chat'),
     'help': (handle_help, 'print available commands'),
 }
+
 profile_menu_commands = {
     'see': (handle_get_me, 'see your profile information'),
     'update': (handle_update_me, 'change your profile information'),
