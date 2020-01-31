@@ -151,6 +151,20 @@ def get_chat_type(chat_id):
     return PRIVATE if t == 'P' else GROUP if t == 'G' else CHANNEL if t == 'C' else CHAT_ERROR
 
 
+def get_pv_member(chat_id):
+    cur.execute(f"SELECT usr from member WHERE usr != {user_id} and chat = {chat_id}")
+    member_id = cur.fetchone()[0]
+    cur.execute(f"SELECT * from usr where id = {member_id}")
+    member_tuple = cur.fetchone()
+    return f'{member_tuple[2]} {member_tuple[3] or ""}'
+
+
+def get_group_channel_title(chat_id):
+    cur.execute(f"SELECT title from groupchannel where id = {chat_id}")
+    title = cur.fetchone()[0]
+    return f'{title}'
+
+
 def handle_show_my_chats():
     global cur
     cur.execute(f"SELECT chat from member where usr = {user_id}")
@@ -168,7 +182,27 @@ def handle_show_my_chats():
             channel_id.append(chat_id[0])
         else:
             print("ERROR!")
+
     print('-\tPrivate Chats:')
+    if private_chat_id:
+        for id in private_chat_id:
+            print('\t\033[1;34m', str(id), '\033[0m\t-\t\033[1;34m', get_pv_member(id), '\033[0m')
+    else:
+        print("\tNo private chats")
+
+    print('-\tGroup Chats:')
+    if group_id:
+        for id in group_id:
+            print('\t\033[1;34m', str(id), '\033[0m\t-\t\033[1;34m', get_group_channel_title(id), '\033[0m')
+    else:
+        print("\tNo group chats")
+
+    print('-\tChannel Chats:')
+    if channel_id:
+        for id in channel_id:
+            print('\t\033[1;34m', str(id), '\033[0m\t-\t\033[1;34m', get_group_channel_title(id), '\033[0m')
+    else:
+        print("\tNo channel chats")
 
 
 def handle_go_to_chat():
