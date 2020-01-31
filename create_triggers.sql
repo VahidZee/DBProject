@@ -165,7 +165,7 @@ BEGIN
                   from administrator a
                   where a.usr = new.added_by
                     and a.chat = new.chat
-                    and a.add_members = true)
+                    and a.add_members = true) and NEW.added_by is not null
     then
         delete
         from member m
