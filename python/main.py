@@ -192,6 +192,12 @@ def get_chat_title(chat_id, chat_type=None):
     return get_group_channel_title(chat_id)
 
 
+def get_group_channel_info(chat_id):
+    cur.execute(f"SELECT * from groupchannel where id = {chat_id}")
+    des = cur.fetchone()
+    return des
+
+
 def handle_show_my_chats():
     global cur
     cur.execute(f"SELECT chat from member where usr = {user_id}")
@@ -213,7 +219,7 @@ def handle_show_my_chats():
     print('-\tPrivate Chats:')
     if private_chat_id:
         for id in private_chat_id:
-            print('\t\033[1;34m', str(id), '\033[0m\t-\t\033[1;34m', get_chat_title(id, PRIVATE), '\033[0m')
+            print('\t\033[1;34m', str(id), '\033[0m\t-\t\033[1;34m', get_pv_member(id), '\033[0m')
 
     print('-\tGroup Chats:')
     if group_id:
@@ -404,7 +410,72 @@ def handle_delete_message():
 
 
 def handle_chat_info():
-    pass
+    chat_type = get_chat_type(current_chat_id)
+    chat_title = get_chat_title(current_chat_id, chat_type)
+    if chat_type == GROUP:
+        info = get_group_channel_info(current_chat_id)
+        bio = info[3]
+        is_private = info[4]
+        inv_link = info[5]
+        user_name = info[6]
+        print('*\tGroup\t' + chat_title)
+        print('*\tGroup ID ' + str(current_chat_id))
+        print('*\tGroup Creator ' + get_user_name(info[1]))
+        print('*\tBio:\t' + (bio if bio else '-'))
+        print('*\tPrivate:\t' + ('Yes' if is_private else 'No'))
+        print('*\tInvite link:\t' + (inv_link if inv_link else '-'))
+        print('*\tUsername:\t' + (user_name if user_name else '-'))
+
+    elif chat_type == CHANNEL:
+        info = get_group_channel_info(current_chat_id)
+        bio = info[3]
+        is_private = info[4]
+        inv_link = info[5]
+        user_name = info[6]
+        print('*\tChannel\t' + chat_title)
+        print('*\tChannel ID ' + str(current_chat_id))
+        print('*\tChannel Creator ' + get_user_name(info[1]))
+        print('*\tBio:\t' + (bio if bio else '-'))
+        print('*\tPrivate:\t' + ('Yes' if is_private else 'No'))
+        print('*\tInvite link:\t' + (inv_link if inv_link else '-'))
+        print('*\tUsername:\t' + (user_name if user_name else '-'))
+
+    elif chat_type == PRIVATE:
+        info = get_user_info(user_id)
+        is_bot = info[5]
+        if is_bot:
+            print('*\tBot\t' + chat_title)
+            print('*\tBot ID ' + str(info[0]))
+            print('*\tBot description:\t' + (info[4] if info[4] else '-'))
+            print('*\tBot username:\t' + (info[1] if info[1] else '-'))
+        else:
+            print('*\tUser\t' + chat_title)
+            print('*\tUser ID ' + str(info[0]))
+            print('*\tUser description:\t' + (info[4] if info[4] else '-'))
+            print('*\tUser username:\t' + (info[1] if info[1] else '-'))
+    else:
+        print("ERROR!")
+
+
+def handle_update_info():
+    title = input("-\tPlease update the title:\t")
+    while not title:
+        print("\tTitle can not be empty.")
+        title = input(f"-\tPlease update the title:\t")
+    description = input("-\tPlease update the description:\t")
+    is_private = input("-\tShall your chat be private?(y/n):\t")
+    while not is_private or is_private not in ['y', 'n']:
+        print("\tChat has to be private or not.")
+        is_private = input(f"-\tShall your chat be private?(y/n):\t")
+    user_name = input("-\tPlease enter the username:\t")
+
+    is_private = True if is_private == 'y' else False
+    description = f"'{description}'" if description else 'null'
+    user_name = f"'{user_name}'" if user_name else 'null'
+
+    cur.execute(
+        f"UPDATE groupchannel set title = '{title}', description = {description}, is_private = {is_private}, user_name = {user_name} where id = {current_chat_id}")
+    conn.commit()
 
 
 # create chat commands
@@ -435,7 +506,7 @@ def handle_creating_pv():
             cur.execute("SELECT max(id) FROM chat")
             chat_id = cur.fetchone()[0]
             cur.execute(f"INSERT into member values({user_id}, {chat_id}, DEFAULT, null, null)")
-            cur.execute(f"INSERT into member values({dest[0]}, {chat_id}, DEFAULT, null, null)")
+            cur.execute(f"INSERT into member values({dest}, {chat_id}, DEFAULT, null, null)")
             conn.commit()
         else:
             print('\t\033[0;31mUser with this username does not exist!\033[0m')
@@ -451,7 +522,7 @@ def handle_creating_gp_ch(is_group):
         description = input(
             f"-\tPlease enter the description of your {'group' if is_group else 'channel'}(optional):\t")
         is_private = input(f"-\tShall your {'group' if is_group else 'channel'} be private?(y/n):\t")
-        while not is_private:
+        while not is_private or is_private not in ['y', 'n']:
             print("\tGroup has to be private or not.")
             is_private = input(f"-\tShall your {'group' if is_group else 'channel'} be private?(y/n):\t")
         user_name = input(f"-\tPlease enter the username of your {'group' if is_group else 'channel'}(optional):\t")
@@ -461,9 +532,11 @@ def handle_creating_gp_ch(is_group):
         is_private = True if is_private == 'y' else False
         inv_link = 'chiz.me/' + uuid.uuid4().hex[:10]
         chat_type = 'G' if is_group else 'C'
+        description = f"'{description}'" if description else 'null'
+        user_name = f"'{user_name}'" if user_name else 'null'
 
         cur.execute(
-            f"INSERT into groupchannelchat values({gp_id}, {creator}, {title}, {description}, {is_private}, {inv_link}, {user_name}, {chat_type})")
+            f"INSERT into groupchannelchat values({gp_id}, {creator}, '{title}', {description}, {is_private}, '{inv_link}', {user_name}, '{chat_type}')")
         conn.commit()
 
     return wrapper
@@ -528,6 +601,7 @@ inchat_menu_commands = {
     'banned_members': (change_menu('members_menu'), 'show messages of this chat'),
     'admins': (change_menu('admins_menu'), 'show messages of this chat'),
     'info': (handle_chat_info, 'show information about this chat'),
+    'update_info': (handle_update_info, 'edit the information about this chat'),
     'back': (change_menu('chats_menu'), 'go back to chats menu'),
     'help': (handle_help, 'print available commands'),
 }
