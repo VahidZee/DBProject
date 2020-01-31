@@ -164,6 +164,13 @@ def get_user_info(uid):
     return cur.fetchone()
 
 
+def get_user_name(uid):
+    data = get_user_info(uid)
+    if data[3]:
+        return data[2].strip() + ' ' + data[3].strip()
+    return data[2].strip()
+
+
 def get_pv_member(chat_id):
     cur.execute(f"SELECT usr from member WHERE usr != {user_id} and chat = {chat_id}")
     member_id = cur.fetchone()[0]
@@ -262,27 +269,67 @@ def handle_leave_chat():
     pass
 
 
+def print_message(message):
+    # variables
+    title_width = 20
+
+    print(f'-\t\033[7m{"from".center(title_width, " ")}\033[0m \033[1;36m{get_user_name(message[6])}\033[0m')
+    print(f'\t\033[7m{"message_id".center(title_width, " ")}\033[0m \033[1;37m{message[1]}\033[0m')
+    if message[3]:
+        print(f'\t\033[7m{"reply to message_id".center(title_width, " ")}\033[0m \033[1;37m{message[5]}\033[0m')
+    print(f'\t\033[7m{"date".center(title_width, " ")}\033[0m \033[1;37m{message[8]}\033[0m')
+
+    if message[2] and message[3]:
+        cur.execute(f"SELECT from_usr from message WHERE destination={message[2]} and id={message[3]}")
+        source_user_id = cur.fetchone()[0]
+        print(
+            f'\t\033[7m{"forwarded from".center(title_width, " ")}\033[0m',
+            '\033[1;35m{get_user_name(source_user_id)}\033[0m')
+        src = message[2], message[3]
+        edit = None
+        text = ''
+        while src[0] and src[1]:
+            cur.execute(
+                f"SELECT text, edit_date from message WHERE destination={src[0]} and id={src[1]}")
+            text, edit = cur.fetchone()
+            cur.execute(
+                f"SELECT forwarded_source,forwarded_id from message WHERE destination={src[0]} and id={src[1]}"
+            )
+            src = cur.fetchone()
+        if edit:
+            print(f'\t\033[7m{"edit_date".center(title_width, " ")}\033[0m \033[1;37m{edit}\033[0m')
+        print(f'\t\033[7m{"text".center(title_width, " ")}\033[0m \033[1;34m{text}\033[0m')
+    else:
+        if message[9]:
+            print(f'\t\033[7m{"edit_date".center(title_width, " ")}: \033[1;37m{message[9]}\033[0m')
+        print(f'\t\033[7m{"text".center(title_width, " ")}\033[0m \033[1;34m{message[10]}\033[0m')
+    print()
+
+
 def handle_show_messages():
     # variables
     temp = input('-\tMessage count (default=10): ')
     limit = int(temp) if temp else 10
-    title_width = 20
 
-    cur.execute("SELECT id from message WHERE destination={current_chat_id} ORDER BY upload_date DESC LIMIT {limit}")
+    cur.execute(f"SELECT * from message WHERE destination={current_chat_id} ORDER BY upload_date DESC LIMIT {limit}")
     messages = cur.fetchall()
     for message in messages:
-        print(f'*\t{"message_id".center(title_width, " ")}: \033[1;34m{message[1]}\033[0m')
-        print(f'*\t{"date".center(title_width, " ")}: \033[1;34m{message[8]}\033[0m')
-        if message[3]:
-            print(f'*\t{"reply to message_id".center(title_width, " ")}: \033[1;34m{message[5]}\033[0m')
-        if message[2] and message[3]:
-            pass
-
-            print(f'*\t{"forwarded from".center(title_width, " ")}: \033[1;34m{message[5]}\033[0m')
+        print_message(message)
 
 
 def handle_find_message():
-    pass
+    # variables
+    temp = input('-\tMessage id: ')
+    while not temp:
+        temp = input(
+            '\t\033[0;31mMessage id cannot be empty: \033[0m').strip()
+
+    cur.execute(f"SELECT * from message WHERE destination={current_chat_id} and id={temp}")
+    message = cur.fetchone()
+    if message:
+        print_message(message)
+    else:
+        print("\t\033[0;31mCould not find the desired message\033[0m")
 
 
 def handle_send_message():
@@ -338,6 +385,22 @@ def handle_send_message():
     cur.execute(
         f"INSERT INTO message VALUES ({current_chat_id}, {new_message_id}, {source_chat_id}, {source_message_id}, {'null' if reply_to_id == 'null' else current_chat_id},{reply_to_id}, {user_id}, null,DEFAULT, null,{text})")
     conn.commit()
+
+
+def handle_delete_message():
+    # variables
+    temp = input('-\tMessage id: ')
+    while not temp:
+        temp = input(
+            '\t\033[0;31mMessage id cannot be empty: \033[0m').strip()
+    cur.execute(f"SELECT * from message WHERE destination={current_chat_id} and id={temp}")
+    message = cur.fetchone()
+    if message:
+        cur.execute(f"DELETE from message WHERE destination={current_chat_id} and id={temp}")
+        conn.commit()
+        print("\tMessage was deleted successfully")
+    else:
+        print("\t\033[0;31mCould not find the desired message\033[0m")
 
 
 def handle_chat_info():
@@ -459,7 +522,7 @@ chats_menu_commands = {
 inchat_menu_commands = {
     'messages': (handle_show_messages, 'show messages of this chat'),
     'send_message': (handle_send_message, 'send a new message to this chat'),
-    'delete_message': (handle_send_message, 'delete a message from this chat'),
+    'delete_message': (handle_delete_message, 'delete a message from this chat'),
     'find_message': (handle_find_message, 'show messages of this chat'),
     'members': (change_menu('members_menu'), 'show messages of this chat'),
     'banned_members': (change_menu('members_menu'), 'show messages of this chat'),
@@ -499,7 +562,8 @@ available_commands = {
 def handle_command(command):
     global user_id
     try:
-        available_commands[state][command][0]()
+        if command not in disabled_commands:
+            available_commands[state][command][0]()
     except Exception as e:
         print(e)
 
