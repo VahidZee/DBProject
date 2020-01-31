@@ -656,7 +656,15 @@ def handle_add_banned():
 
 
 def handle_remove_banned():
-    pass
+    temp = int(input('-\tPlease enter the id of the user getting unbanned:\t'))
+    cur.execute(f"SELECT * from banned WHERE usr = {temp} and chat = {current_chat_id}")
+    dest = cur.fetchone()
+    if dest:
+        cur.execute(f"DELETE FROM banned WHERE usr = {temp} AND chat = {current_chat_id}")
+        conn.commit()
+    else:
+        print('\t\033[0;31mUser is not banned in this chat!\033[0m')
+        return
 
 
 # global commands
@@ -733,8 +741,8 @@ members_menu_commands = {
 
 banned_menu_commands = {
     'show': (handle_show_banned, 'show banned members of this chat'),
-    'add': (handle_add_banned, 'ban a new member from this chat'),
-    'remove': (handle_remove_banned, 'remove a member from the banned list'),
+    'ban': (handle_add_banned, 'ban a new member from this chat'),
+    'unban': (handle_remove_banned, 'remove a member from the banned list'),
     'back': (change_menu('inchat_menu', False), 'go back to chats menu'),
     'help': (handle_help, 'print available commands'),
 }
