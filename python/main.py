@@ -1,6 +1,6 @@
 import psycopg2
 
-from config import *
+from python.config import *
 
 # creating database connection
 conn = psycopg2.connect(host=db_host, database=db_name, user=db_user, password=db_password)
@@ -141,7 +141,7 @@ def go_to_profile_menu():
 
 
 def handle_help():
-    for key, value in avalable_commands[state].items():
+    for key, value in available_commands[state].items():
         print(f'\t\033[1m{key.center(10, " ")}\033[0m\033[1m - \033[0m{value[1]}')
 
 
@@ -153,10 +153,15 @@ def handle_state_transitions():
         old_state = state
 
 
+def exit_code():
+    print("Thanks for using our DataBase. :) \nGood Bye ")
+    exit()
+
+
 base_commands = {
     'logon': (handle_logon, 'create a new user'),
     'login': (handle_login, 'login to your chat account'),
-    'exit': (exit, 'exit from program'),
+    'exit': (exit_code, 'exit from program'),
     'help': (handle_help, 'print available commands'),
 }
 
@@ -174,7 +179,7 @@ profile_menu_commands = {
     'help': (handle_help, 'print available commands'),
 }
 
-avalable_commands = {
+available_commands = {
     'base': base_commands,
     'menu': menu_commands,
     'profile_menu': profile_menu_commands,
@@ -184,7 +189,7 @@ avalable_commands = {
 def handle_command(command):
     global user_id
     try:
-        avalable_commands[state][command][0]()
+        available_commands[state][command][0]()
     except Exception as e:
         print(e)
 
