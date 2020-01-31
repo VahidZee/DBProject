@@ -1,4 +1,4 @@
 db_host = 'localhost'
-db_name = 'dbproject'
+db_name = 'postgres'
 db_user = 'postgres'
-db_password = 'password'
+db_password = 'arvin123'
