@@ -1,8 +1,6 @@
 import psycopg2
 import uuid
 from python.config import *
-import subprocess as sp
-import os
 
 # creating database connection
 conn = psycopg2.connect(host=db_host, database=db_name, user=db_user, password=db_password)
@@ -443,6 +441,7 @@ def handle_edit_message():
         print("\t\033[0;31mCould not find the desired message\033[0m")
 
 
+## TODO cleaning up UI
 def handle_chat_info():
     chat_type = get_chat_type(current_chat_id)
     chat_title = get_chat_title(current_chat_id, chat_type)
@@ -491,17 +490,18 @@ def handle_chat_info():
         print("ERROR!")
 
 
+## TODO cleaning up UI
 def handle_update_info():
     title = input("-\tPlease update the title:\t")
     while not title:
         print("\tTitle can not be empty.")
         title = input(f"-\tPlease update the title:\t")
-    description = input("-\tPlease update the description:\t")
+    description = input("-\tPlease update the description(optional):\t")
     is_private = input("-\tShall your chat be private?(y/n):\t")
     while not is_private or is_private not in ['y', 'n']:
         print("\tChat has to be private or not.")
         is_private = input(f"-\tShall your chat be private?(y/n):\t")
-    user_name = input("-\tPlease enter the username:\t")
+    user_name = input("-\tPlease enter the username(optional):\t")
 
     is_private = True if is_private == 'y' else False
     description = f"'{description}'" if description else 'null'
@@ -576,6 +576,30 @@ def handle_creating_gp_ch(is_group):
     return wrapper
 
 
+# members commands
+def handle_show_members():
+    temp = input('-\tMember count (default=10): ')
+    limit = int(temp) if temp else 10
+
+    cur.execute(f"SELECT * from member WHERE chat={current_chat_id} limit {limit}")
+    members = cur.fetchall()
+    for member in members:
+        mem_id = member[0]
+        info = get_user_info(mem_id)
+        username = info[1]
+        name = get_user_name(mem_id)
+        print("-\t" + name + (("\t-\t" + username) if username else ''))
+
+
+def handle_add_member():
+    cur.execute(f"SELECT id from member WHERE chat= {current_chat_id}")
+    if cur.fetchone():
+        cur.execute(f"SELECT max(id) from member WHERE chat={current_chat_id}")
+        new_member_id = cur.fetchone()[0] + 1
+    else:
+        new_member_id = 1
+
+
 # global commands
 def change_menu(new_state, reset=True):
     def wrapped():
@@ -632,12 +656,19 @@ inchat_menu_commands = {
     'delete_message': (handle_delete_message, 'delete a message from this chat'),
     'edit_message': (handle_edit_message, 'edit one of your own messages'),
     'find_message': (handle_find_message, 'show messages of this chat'),
-    'members': (change_menu('members_menu'), 'show messages of this chat'),
-    'banned_members': (change_menu('members_menu'), 'show messages of this chat'),
+    'members': (change_menu('members_menu', False), 'show messages of this chat'),
+    'banned_members': (change_menu('banned_menu', False), 'show messages of this chat'),
     'admins': (change_menu('admins_menu'), 'show messages of this chat'),
     'info': (handle_chat_info, 'show information about this chat'),
     'update_info': (handle_update_info, 'edit the information about this chat'),
     'back': (change_menu('chats_menu'), 'go back to chats menu'),
+    'help': (handle_help, 'print available commands'),
+}
+
+members_menu_commands = {
+    'show_members': (handle_show_members, 'show members of this chat'),
+    'add_member': (handle_add_member, 'add a new member to this chat'),
+    'back': (change_menu('inchat_menu', False), 'go back to chats menu'),
     'help': (handle_help, 'print available commands'),
 }
 
@@ -663,7 +694,7 @@ available_commands = {
     'profile_menu': profile_menu_commands,
     'chats_menu': chats_menu_commands,
     'inchat_menu': inchat_menu_commands,
-    'members_menu': inchat_menu_commands,
+    'members_menu': members_menu_commands,
     'create_chat': create_chat_menu_commands,
 }
 
