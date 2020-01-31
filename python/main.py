@@ -11,8 +11,10 @@ cur.execute('SELECT version()')
 user_id = user_data = None
 state = 'base'
 old_state = None
+back_target = None
 
 
+# base menu commands
 def db_create_user(phone, fname, lname=None, bio=None, uname=None, ):
     try:
         cur.execute(
@@ -75,19 +77,26 @@ def handle_login():
     print(f'\tWelcome \033[1;34m{user_data[3].strip()}\033[0m!')
 
 
+def exit_code():
+    print("Thanks for using our DataBase. :) \nGood Bye ")
+    exit()
+
+
+# main menu commands
 def handle_logout():
     global user_id, user_data, state
     user_data = user_id = None
     state = 'base'
 
 
+# profile menu commands
 def handle_get_me():
     print('Your user information: ')
-    print(f'-\tPhone number: \033[1;34m{user_data[2].strip()}\033[0m')
-    print(f'-\tUsername: \033[1;34m{user_data[1].strip()}\033[0m')
-    print(f'-\tFirst name: \033[1;34m{user_data[3].strip()}\033[0m')
-    print(f'-\tLast name: \033[1;34m{user_data[4].strip()}\033[0m')
-    print(f'-\tBiography: \033[1;34m{user_data[5].strip()}\033[0m')
+    print(f'-\tPhone number: \033[1;34m{user_data[2]}\033[0m')
+    print(f'-\tUsername: \033[1;34m{user_data[1]}\033[0m')
+    print(f'-\tFirst name: \033[1;34m{user_data[3]}\033[0m')
+    print(f'-\tLast name: \033[1;34m{user_data[4]}\033[0m')
+    print(f'-\tBiography: \033[1;34m{user_data[5]}\033[0m')
 
 
 def handle_update_me():
@@ -130,14 +139,26 @@ def handle_delete_me():
         handle_logout()
 
 
-def go_to_main_menu():
-    global state
-    state = 'menu'
+# chats menu commands
+def handle_show_my_chats():
+    pass  # todo arvin
 
 
-def go_to_profile_menu():
-    global state
-    state = 'profile_menu'
+def handle_go_to_chat():
+    pass  # todo vahid
+
+
+def handle_leave_chat():
+    pass
+
+
+# global commands
+def change_menu(new_state, back=None):
+    def wrapped():
+        global state
+        global back_target
+        back_target = back if back else state
+        state = new_state
 
 
 def handle_help():
@@ -153,11 +174,6 @@ def handle_state_transitions():
         old_state = state
 
 
-def exit_code():
-    print("Thanks for using our DataBase. :) \nGood Bye ")
-    exit()
-
-
 base_commands = {
     'logon': (handle_logon, 'create a new user'),
     'login': (handle_login, 'login to your chat account'),
@@ -167,7 +183,17 @@ base_commands = {
 
 menu_commands = {
     'logout': (handle_logout, 'logout of your account'),
-    'profile': (go_to_profile_menu, 'see and change your profile information'),
+    'chats': (change_menu('chats_menu'), 'go to chat menu'),
+    'profile': (change_menu('profile_menu'), 'see and change your profile information'),
+    'help': (handle_help, 'print available commands'),
+}
+
+chats_menu_commands = {
+    'show': (handle_show_my_chats, 'show a list of your chats'),
+    'goto': (handle_go_to_chat, 'go to a specific chat'),
+    'leave': (handle_leave_chat, 'go to chat menu'),
+    'create': (change_menu('create_chat_menu'), 'create a new chat'),
+    'back': (change_menu('menu'), 'back to main menu'),
     'help': (handle_help, 'print available commands'),
 }
 
@@ -175,7 +201,7 @@ profile_menu_commands = {
     'see': (handle_get_me, 'see your profile information'),
     'update': (handle_update_me, 'change your profile information'),
     'delete': (handle_delete_me, 'delete your profile'),
-    'back': (go_to_main_menu, 'go to main menu'),
+    'back': (change_menu('menu'), 'go to main menu'),
     'help': (handle_help, 'print available commands'),
 }
 
@@ -183,6 +209,7 @@ available_commands = {
     'base': base_commands,
     'menu': menu_commands,
     'profile_menu': profile_menu_commands,
+    'chats_menu': chats_menu_commands,
 }
 
 
