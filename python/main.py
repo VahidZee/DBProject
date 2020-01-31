@@ -4,6 +4,7 @@ from python.config import *
 
 # creating database connection
 conn = psycopg2.connect(host=db_host, database=db_name, user=db_user, password=db_password)
+conn.rollback()
 cur = conn.cursor()
 
 # constant values
@@ -205,7 +206,7 @@ def handle_show_my_chats():
         for id in channel_id:
             print('\t\033[1;34m', str(id), '\033[0m\t-\t\033[1;34m', get_group_channel_title(id), '\033[0m')
     else:
-        print("\tNo channel chats")
+        print("\tNot subscribed in any channels yet :)")
 
 
 def handle_go_to_chat():
@@ -260,6 +261,15 @@ def handle_send_message():
 
 
 def handle_chat_info():
+    pass
+
+
+# create chat commands
+def handle_creating_pv():
+    pass
+
+
+def handle_creating_gp_ch():
     pass
 
 
@@ -333,12 +343,21 @@ profile_menu_commands = {
     'help': (handle_help, 'print available commands'),
 }
 
+create_chat_menu_commands = {
+    'private': (handle_creating_pv, 'start a new chat with your friend'),
+    'group': (handle_creating_gp_ch, 'make a new group'),
+    'channel': (handle_creating_gp_ch, 'create a new channel'),
+    'back': (change_menu('chats_menu'), 'go to main menu'),
+    'help': (handle_help, 'print available commands'),
+}
+
 available_commands = {
     'base': base_commands,
     'menu': menu_commands,
     'profile_menu': profile_menu_commands,
     'chats_menu': chats_menu_commands,
     'inchat_menu': inchat_menu_commands,
+    'create_chat': create_chat_menu_commands,
 }
 
 
