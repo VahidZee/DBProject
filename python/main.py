@@ -5,18 +5,18 @@ from python.config import *
 # creating database connection
 conn = psycopg2.connect(host=db_host, database=db_name, user=db_user, password=db_password)
 cur = conn.cursor()
-cur.execute('SELECT version()')
+
+# constant values
+PRIVATE = 0
+GROUP = 1
+CHANNEL = 2
+CHAT_ERROR = 3
 
 # global variables
 user_id = user_data = None
 state = 'base'
 old_state = None
 back_target = None
-
-PRIVATE = 0
-GROUP = 1
-CHANNEL = 2
-CHAT_ERROR = 3
 
 
 # base menu commands
@@ -145,6 +145,12 @@ def handle_delete_me():
 
 
 # chats menu commands
+def get_chat_type(chat_id):
+    cur.execute(f"SELECT chat_type from chat WHERE id={chat_id}")
+    t = cur.fetchone()[0]
+    return PRIVATE if t == 'P' else GROUP if t == 'G' else CHANNEL if t == 'C' else CHAT_ERROR
+
+
 def handle_show_my_chats():
     global cur
     cur.execute(f"SELECT chat from member where usr = {user_id}")
@@ -173,6 +179,7 @@ def handle_go_to_chat():
     cur.execute(f"SELECT chat from member WHERE chat='{temp}' and usr={user_id}")
     if not cur.fetchone():
         print('\t\033[0;31mYou are not a member of this chat ID\033[0m')
+        return
 
 
 def handle_leave_chat():
