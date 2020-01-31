@@ -223,7 +223,7 @@ def handle_go_to_chat():
     current_chat_id = chat_id = temp
     chat_type = get_chat_type(chat_id)
     if chat_type == PRIVATE:
-        disabled_commands = {'update_info', 'members', 'admins'}
+        disabled_commands = set(('update_info', 'members', 'admins', 'banned_members',))
     elif chat_type == GROUP or chat_type == CHANNEL:
         cur.execute(f"SELECT * from administrator WHERE chat='{chat_id}' and usr={user_id}")
         current_permissions = permissions = cur.fetchone()
@@ -324,14 +324,14 @@ chats_menu_commands = {
 
 inchat_menu_commands = {
     'messages': (handle_show_messages, 'show messages of this chat'),
+    'send_message': (handle_send_message, 'send a new message to this chat'),
+    'delete_message': (handle_send_message, 'delete a message from this chat'),
     'find_message': (handle_find_message, 'show messages of this chat'),
     'members': (change_menu('members_menu'), 'show messages of this chat'),
     'banned_members': (change_menu('members_menu'), 'show messages of this chat'),
     'admins': (change_menu('admins_menu'), 'show messages of this chat'),
     'info': (handle_chat_info, 'show information about this chat'),
-    'send_message': (handle_send_message, 'send a new message to this chat'),
-    'delete_message': (handle_send_message, 'delete a message from this chat'),
-    'back': (change_menu('admins_menu'), 'go back to main menu'),
+    'back': (change_menu('chats'), 'go back to chats menu'),
     'help': (handle_help, 'print available commands'),
 }
 
@@ -357,6 +357,7 @@ available_commands = {
     'profile_menu': profile_menu_commands,
     'chats_menu': chats_menu_commands,
     'inchat_menu': inchat_menu_commands,
+    'members_menu': inchat_menu_commands,
     'create_chat': create_chat_menu_commands,
 }
 
