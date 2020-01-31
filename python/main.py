@@ -1,5 +1,5 @@
 import psycopg2
-
+import uuid
 from python.config import *
 
 # creating database connection
@@ -266,11 +266,60 @@ def handle_chat_info():
 
 # create chat commands
 def handle_creating_pv():
-    pass
+    temp = input('-\tFind person using phone number(p) or username(u)?\t')
+    if temp == 'p':
+        temp = input('-\tEnter the phone number:\t')
+        cur.execute(f"SELECT * from userperson WHERE phone = '{temp}'")
+        dest = cur.fetchone()
+        if dest:
+            cur.execute(f"INSERT into chat values(DEFAULT, 'P')")
+            conn.commit()
+            cur.execute("SELECT max(id) FROM chat")
+            chat_id = cur.fetchone()[0]
+            cur.execute(f"INSERT into member values({user_id}, {chat_id}, DEFAULT, null, null)")
+            cur.execute(f"INSERT into member values({dest[0]}, {chat_id}, DEFAULT, null, null)")
+            conn.commit()
+        else:
+            print('\t\033[0;31mUser with this phone number does not exist!\033[0m')
+            return
+    else:
+        temp = input('-\tEnter the username:\t')
+        cur.execute(f"SELECT * from usr WHERE user_name = '{temp}'")
+        dest = cur.fetchone()[0]
+        if dest:
+            cur.execute(f"INSERT into chat values(DEFAULT, 'P')")
+            conn.commit()
+            cur.execute("SELECT max(id) FROM chat")
+            chat_id = cur.fetchone()[0]
+            cur.execute(f"INSERT into member values({user_id}, {chat_id}, DEFAULT, null, null)")
+            cur.execute(f"INSERT into member values({dest[0]}, {chat_id}, DEFAULT, null, null)")
+            conn.commit()
+        else:
+            print('\t\033[0;31mUser with this username does not exist!\033[0m')
+            return
 
 
-def handle_creating_gp_ch():
-    pass
+def handle_creating_gp_ch(is_group):
+    title = input(f"-\tPlease enter the title of your {'group' if is_group else 'channel'}:\t")
+    while not title:
+        print("\tTitle can not be empty.")
+        title = input(f"-\tPlease enter the title of your {'group' if is_group else 'channel'}:\t")
+    description = input(f"-\tPlease enter the description of your {'group' if is_group else 'channel'}(optional):\t")
+    is_private = input(f"-\tShall your {'group' if is_group else 'channel'} be private?(y/n):\t")
+    while not is_private:
+        print("\tGroup has to be private or not.")
+        is_private = input(f"-\tShall your {'group' if is_group else 'channel'} be private?(y/n):\t")
+    user_name = input(f"-\tPlease enter the username of your {'group' if is_group else 'channel'}(optional):\t")
+
+    gp_id = 0
+    creator = user_id
+    is_private = True if is_private == 'y' else False
+    inv_link = 'chiz.me/' + uuid.uuid4().hex[:10]
+    chat_type = 'G' if is_group else 'C'
+
+    cur.execute(
+        f"INSERT into groupchannelchat values({gp_id}, {creator}, {title}, {description}, {is_private}, {inv_link}, {user_name}, {chat_type})")
+    conn.commit()
 
 
 # global commands
@@ -317,7 +366,7 @@ chats_menu_commands = {
     'show': (handle_show_my_chats, 'show a list of your chats'),
     'goto': (handle_go_to_chat, 'go to a specific chat'),
     'leave': (handle_leave_chat, 'go to chat menu'),
-    'create': (change_menu('create_chat_menu'), 'create a new chat'),
+    'create': (change_menu('create_chat'), 'create a new chat'),
     'back': (change_menu('menu'), 'back to main menu'),
     'help': (handle_help, 'print available commands'),
 }
@@ -345,8 +394,8 @@ profile_menu_commands = {
 
 create_chat_menu_commands = {
     'private': (handle_creating_pv, 'start a new chat with your friend'),
-    'group': (handle_creating_gp_ch, 'make a new group'),
-    'channel': (handle_creating_gp_ch, 'create a new channel'),
+    'group': (handle_creating_gp_ch(True), 'make a new group'),
+    'channel': (handle_creating_gp_ch(False), 'create a new channel'),
     'back': (change_menu('chats_menu'), 'go to main menu'),
     'help': (handle_help, 'print available commands'),
 }
@@ -372,5 +421,6 @@ def handle_command(command):
 
 if __name__ == '__main__':
     while True:
+        print("Hi")
         handle_state_transitions()
         handle_command(input('$ ').strip())
