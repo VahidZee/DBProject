@@ -13,6 +13,11 @@ state = 'base'
 old_state = None
 back_target = None
 
+PRIVATE = 0
+GROUP = 1
+CHANNEL = 2
+CHAT_ERROR = 3
+
 
 # base menu commands
 def db_create_user(phone, fname, lname=None, bio=None, uname=None, ):
@@ -141,7 +146,23 @@ def handle_delete_me():
 
 # chats menu commands
 def handle_show_my_chats():
-    pass  # todo arvin
+    global cur
+    cur.execute(f"SELECT chat from member where usr = {user_id}")
+    all_chats_ids = cur.fetchall()
+    private_chat_id = []
+    group_id = []
+    channel_id = []
+    for chat_id in all_chats_ids:
+        chat_type = get_chat_type(chat_id[0])
+        if chat_type == PRIVATE:
+            private_chat_id.append(chat_id[0])
+        elif chat_type == GROUP:
+            group_id.append(chat_id[0])
+        elif chat_type == CHANNEL:
+            channel_id.append(chat_id[0])
+        else:
+            print("ERROR!")
+    print('-\tPrivate Chats:')
 
 
 def handle_go_to_chat():
