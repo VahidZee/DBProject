@@ -166,6 +166,10 @@ BEGIN
                   where a.usr = new.added_by
                     and a.chat = new.chat
                     and a.add_members = true) and NEW.added_by is not null
+        or EXISTS(select *
+                  from banned b
+                  where b.usr = new.usr
+                    and b.chat = new.chat)
     then
         delete
         from member m

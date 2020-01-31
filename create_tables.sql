@@ -115,7 +115,7 @@ create table if not exists File
 );
 
 -- Member Table
-drop table if exists Message cascade;
+drop table if exists Member cascade;
 create table if not exists Member
 (
     usr               integer not null,
