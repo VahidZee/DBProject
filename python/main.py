@@ -441,6 +441,17 @@ def handle_edit_message():
         print("\t\033[0;31mCould not find the desired message\033[0m")
 
 
+def handle_leave():
+    temp = input('\tAre you sure you want to leave this chat?(y/n)')
+    while temp not in ['y', 'n']:
+        print('\tPlease respond with y or n.')
+        temp = input('\tAre you sure you want to leave this chat?(y/n)')
+    temp = True if temp == 'y' else False
+    if temp:
+        cur.execute(f"DELETE from member WHERE usr={user_id} AND chat={current_chat_id}")
+        conn.commit()
+
+
 ## TODO cleaning up UI
 def handle_chat_info():
     chat_type = get_chat_type(current_chat_id)
@@ -844,6 +855,7 @@ inchat_menu_commands = {
     'admins': (change_menu('admins_menu', False), 'show messages of this chat'),
     'info': (handle_chat_info, 'show information about this chat'),
     'update_info': (handle_update_info, 'edit the information about this chat'),
+    'leave': (handle_leave, 'leave this chat'),
     'back': (change_menu('chats_menu'), 'go back to chats menu'),
     'help': (handle_help, 'print available commands'),
 }
@@ -914,3 +926,5 @@ if __name__ == '__main__':
         handle_state_transitions()
         handle_command(input('$ ').strip())
         print('\n' + '-' * 40, '\n')
+
+# TODO Join, Block, Add admin, remove admin, Find user, Find chat, Cleaning up UI
