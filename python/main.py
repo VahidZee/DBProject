@@ -1,6 +1,8 @@
 import psycopg2
 import uuid
 from python.config import *
+import subprocess as sp
+import os
 
 # creating database connection
 conn = psycopg2.connect(host=db_host, database=db_name, user=db_user, password=db_password)
@@ -281,7 +283,7 @@ def print_message(message):
 
     print(f'-\t\033[7m{"from".center(title_width, " ")}\033[0m \033[1;36m{get_user_name(message[6])}\033[0m')
     print(f'\t\033[7m{"message_id".center(title_width, " ")}\033[0m \033[1;37m{message[1]}\033[0m')
-    if message[3]:
+    if message[5]:
         print(f'\t\033[7m{"reply to message_id".center(title_width, " ")}\033[0m \033[1;37m{message[5]}\033[0m')
     print(f'\t\033[7m{"date".center(title_width, " ")}\033[0m \033[1;37m{message[8]}\033[0m')
 
@@ -290,7 +292,7 @@ def print_message(message):
         source_user_id = cur.fetchone()[0]
         print(
             f'\t\033[7m{"forwarded from".center(title_width, " ")}\033[0m',
-            '\033[1;35m{get_user_name(source_user_id)}\033[0m')
+            f'\033[1;35m{get_user_name(source_user_id)}\033[0m')
         src = message[2], message[3]
         edit = None
         text = ''
@@ -307,7 +309,7 @@ def print_message(message):
         print(f'\t\033[7m{"text".center(title_width, " ")}\033[0m \033[1;34m{text}\033[0m')
     else:
         if message[9]:
-            print(f'\t\033[7m{"edit_date".center(title_width, " ")}: \033[1;37m{message[9]}\033[0m')
+            print(f'\t\033[7m{"edit_date".center(title_width, " ")}\033[0m \033[1;37m{message[9]}\033[0m')
         print(f'\t\033[7m{"text".center(title_width, " ")}\033[0m \033[1;34m{message[10]}\033[0m')
     print()
 
@@ -319,6 +321,7 @@ def handle_show_messages():
 
     cur.execute(f"SELECT * from message WHERE destination={current_chat_id} ORDER BY upload_date DESC LIMIT {limit}")
     messages = cur.fetchall()
+    print()
     for message in messages:
         print_message(message)
 
@@ -386,7 +389,7 @@ def handle_send_message():
         cur.execute(f"SELECT * from message WHERE id='{source_message_id}' and destination='{source_chat_id}'")
         if not cur.fetchone():
             print(
-                '\t\033[0;31mSource message could not be found\033[0m').strip()
+                '\t\033[0;31mSource message could not be found\033[0m')
             return
     cur.execute(
         f"INSERT INTO message VALUES ({current_chat_id}, {new_message_id}, {source_chat_id}, {source_message_id}, {'null' if reply_to_id == 'null' else current_chat_id},{reply_to_id}, {user_id}, null,DEFAULT, null,{text})")
@@ -405,6 +408,37 @@ def handle_delete_message():
         cur.execute(f"DELETE from message WHERE destination={current_chat_id} and id={temp}")
         conn.commit()
         print("\tMessage was deleted successfully")
+    else:
+        print("\t\033[0;31mCould not find the desired message\033[0m")
+
+
+def handle_edit_message():
+    # variables
+    temp = input('-\tMessage id: ')
+    while not temp:
+        temp = input(
+            '\t\033[0;31mMessage id cannot be empty: \033[0m').strip()
+    message_id = temp
+    cur.execute(f"SELECT * from message WHERE destination={current_chat_id} and id={message_id}")
+    message = cur.fetchone()
+    if message:
+        if message[6] != user_id:
+            print("\t\033[0;31mYou can only edit your own messages\033[0m")
+            return
+        if message[2] and message[3]:
+            print("\t\033[0;31mYou cannot edit forwarded messages\033[0m")
+            return
+        print('-\tEditing Message:')
+        print_message(message)
+        temp = input('-\tNew essage text: ')
+        while not temp:
+            temp = input(
+                '\t\033[0;31mMesssage text cannot be empty: \033[0m').strip()
+        text = f"'{temp}'"
+        cur.execute(
+            f"UPDATE message set text={text}, edit_date=CURRENT_TIMESTAMP WHERE destination={current_chat_id} and id={message_id}")
+        conn.commit()
+        print("\tMessage was edited successfully")
     else:
         print("\t\033[0;31mCould not find the desired message\033[0m")
 
@@ -596,6 +630,7 @@ inchat_menu_commands = {
     'messages': (handle_show_messages, 'show messages of this chat'),
     'send_message': (handle_send_message, 'send a new message to this chat'),
     'delete_message': (handle_delete_message, 'delete a message from this chat'),
+    'edit_message': (handle_edit_message, 'edit one of your own messages'),
     'find_message': (handle_find_message, 'show messages of this chat'),
     'members': (change_menu('members_menu'), 'show messages of this chat'),
     'banned_members': (change_menu('members_menu'), 'show messages of this chat'),
@@ -646,3 +681,4 @@ if __name__ == '__main__':
     while True:
         handle_state_transitions()
         handle_command(input('$ ').strip())
+        print('\n' + '-' * 40, '\n')
