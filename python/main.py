@@ -592,12 +592,71 @@ def handle_show_members():
 
 
 def handle_add_member():
-    cur.execute(f"SELECT id from member WHERE chat= {current_chat_id}")
-    if cur.fetchone():
-        cur.execute(f"SELECT max(id) from member WHERE chat={current_chat_id}")
-        new_member_id = cur.fetchone()[0] + 1
+    temp = input('-\tFind person using phone number(p) or username(u)?\t')
+    if temp == 'p':
+        temp = input('-\tEnter the phone number:\t')
+        cur.execute(f"SELECT * from userperson WHERE phone = '{temp}'")
+        dest = cur.fetchone()
+        if dest:
+            cur.execute(f"SELECT * from member where usr = {dest[0]} and chat = {current_chat_id}")
+            if not cur.fetchone():
+                cur.execute(f"INSERT into member values({dest[0]}, {current_chat_id}, DEFAULT, null, null)")
+                conn.commit()
+            else:
+                print('\t\033[0;31mUser is already in this chat!\033[0m')
+        else:
+            print('\t\033[0;31mUser with this phone number does not exist!\033[0m')
+            return
     else:
-        new_member_id = 1
+        temp = input('-\tEnter the username:\t')
+        cur.execute(f"SELECT * from usr WHERE user_name='{temp}'")
+        dest = cur.fetchone()
+        if dest:
+            cur.execute(f"SELECT * from member where usr={dest[0]} and chat={current_chat_id}")
+            if not cur.fetchone():
+                cur.execute(f"INSERT into member values({dest[0]}, {current_chat_id}, DEFAULT, null, null)")
+                conn.commit()
+            else:
+                print('\t\033[0;31mUser is already in this chat!\033[0m')
+        else:
+            print('\t\033[0;31mUser with this username does not exist!\033[0m')
+            return
+
+
+def handle_show_banned():
+    temp = input('-\tBanned member count (default=10): ')
+    limit = int(temp) if temp else 10
+
+    cur.execute(f"SELECT * from banned WHERE chat={current_chat_id} limit {limit}")
+    members = cur.fetchall()
+    for member in members:
+        admin = member[0]
+        mem_id = member[2]
+        info = get_user_info(mem_id)
+        username = info[1]
+        name = get_user_name(mem_id)
+        admin_name = get_user_name(admin)
+        print(f"-\t{mem_id}\t" + name + (("\t-\t" + username) if username else '') + '\tbanned by\t' + admin_name)
+
+
+def handle_add_banned():
+    temp = int(input('-\tPlease enter the id of the user getting banned:\t'))
+    cur.execute(f"SELECT * from member WHERE usr = {temp} and chat = {current_chat_id}")
+    dest = cur.fetchone()
+    if dest:
+        cur.execute(f"SELECT * from banned where usr = {temp} and chat = {current_chat_id}")
+        if not cur.fetchone():
+            cur.execute(f"INSERT into banned values({user_id}, {current_chat_id}, {temp})")
+            conn.commit()
+        else:
+            print('\t\033[0;31mUser is already banned in this chat!\033[0m')
+    else:
+        print('\t\033[0;31mUser is not in this chat or does not exist at all!\033[0m')
+        return
+
+
+def handle_remove_banned():
+    pass
 
 
 # global commands
@@ -672,6 +731,14 @@ members_menu_commands = {
     'help': (handle_help, 'print available commands'),
 }
 
+banned_menu_commands = {
+    'show': (handle_show_banned, 'show banned members of this chat'),
+    'add': (handle_add_banned, 'ban a new member from this chat'),
+    'remove': (handle_remove_banned, 'remove a member from the banned list'),
+    'back': (change_menu('inchat_menu', False), 'go back to chats menu'),
+    'help': (handle_help, 'print available commands'),
+}
+
 profile_menu_commands = {
     'see': (handle_get_me, 'see your profile information'),
     'update': (handle_update_me, 'change your profile information'),
@@ -695,6 +762,7 @@ available_commands = {
     'chats_menu': chats_menu_commands,
     'inchat_menu': inchat_menu_commands,
     'members_menu': members_menu_commands,
+    'banned_menu': banned_menu_commands,
     'create_chat': create_chat_menu_commands,
 }
 
