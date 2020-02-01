@@ -603,51 +603,39 @@ def handle_leave():
         conn.commit()
 
 
-## TODO cleaning up UI
 def handle_chat_info():
     chat_type = get_chat_type(current_chat_id)
     chat_title = get_chat_title(current_chat_id, chat_type)
-    if chat_type == GROUP:
+    width = 16
+    if chat_type == GROUP or chat_type == CHANNEL:
         info = get_group_channel_info(current_chat_id)
         bio = info[3]
         is_private = info[4]
         inv_link = info[5]
         user_name = info[6]
-        print('*\tGroup\t' + chat_title)
-        print('*\tGroup ID ' + str(current_chat_id))
-        print('*\tGroup Creator ' + get_user_name(info[1]))
-        print('*\tBio:\t' + (bio if bio else '-'))
-        print('*\tPrivate:\t' + ('Yes' if is_private else 'No'))
-        print('*\tInvite link:\t' + (inv_link if inv_link else '-'))
-        print('*\tUsername:\t' + (user_name if user_name else '-'))
-
-    elif chat_type == CHANNEL:
-        info = get_group_channel_info(current_chat_id)
-        bio = info[3]
-        is_private = info[4]
-        inv_link = info[5]
-        user_name = info[6]
-        print('*\tChannel\t' + chat_title)
-        print('*\tChannel ID ' + str(current_chat_id))
-        print('*\tChannel Creator ' + get_user_name(info[1]))
-        print('*\tBio:\t' + (bio if bio else '-'))
-        print('*\tPrivate:\t' + ('Yes' if is_private else 'No'))
-        print('*\tInvite link:\t' + (inv_link if inv_link else '-'))
-        print('*\tUsername:\t' + (user_name if user_name else '-'))
+        if chat_type == GROUP:
+            print('*\t', 'group title'.center(width, ' ') + '\033[1;36m' + chat_title, '\033[0m')
+        else:
+            print('*\t', 'channel title'.center(width, ' ') + '\033[1;36m' + chat_title,  '\033[0m')
+        print('*\t', 'chat_id'.center(width, ' ') + '\033[1;36m', str(current_chat_id), '\033[0m')
+        print('*\t', 'creator'.center(width, ' ') + '\033[1;36m', get_user_name(info[1]), '\033[0m')
+        print('*\t', 'description'.center(width, ' ') + '\033[1;36m', (bio if bio else '-'), '\033[0m')
+        print('*\t',
+              'is_private'.center(width, ' ') + ('\033[1;32mYes\033[0m' if is_private else '\033[1;31mNo\033[0m'))
+        print('*\t', 'invite_link'.center(width, ' ') + '\033[1;36m' + (inv_link if inv_link else '-'), '\033[0m')
+        print('*\t', 'user_name'.center(width, ' ') + '\033[1;36m', (('@' + user_name) if user_name else '-'), '\033[0m')
 
     elif chat_type == PRIVATE:
         info = get_user_info(user_id)
         is_bot = info[5]
         if is_bot:
-            print('*\tBot\t' + chat_title)
-            print('*\tBot ID ' + str(info[0]))
-            print('*\tBot description:\t' + (info[4] if info[4] else '-'))
-            print('*\tBot username:\t' + (info[1] if info[1] else '-'))
+            print('*\t', 'bot'.center(width, ' ') + '\033[1;36m' + chat_title, '\033[0m')
         else:
-            print('*\tUser\t' + chat_title)
-            print('*\tUser ID ' + str(info[0]))
-            print('*\tUser description:\t' + (info[4] if info[4] else '-'))
-            print('*\tUser username:\t' + (info[1] if info[1] else '-'))
+            print('*\t', 'person'.center(width, ' ') + '\033[1;36m' + chat_title,  '\033[0m')
+        print('*\t', 'user_id'.center(width, ' ') + '\033[1;36m', str(info[0]), '\033[0m')
+        print('*\t', 'description'.center(width, ' ') + '\033[1;36m', (info[4] if info[4] else '-'), '\033[0m')
+        print('*\t', 'user_name'.center(width, ' ') + '\033[1;36m', (('@' + info[1]) if info[1] else '-'), '\033[0m')
+
     else:
         print('\t\033[0;31mWrong chat type\033[0m')
 
