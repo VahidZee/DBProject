@@ -1,6 +1,6 @@
 import psycopg2
 import uuid
-from python.config import *
+from config import *
 
 # creating database connection
 conn = psycopg2.connect(host=db_host, database=db_name, user=db_user, password=db_password)
@@ -98,7 +98,6 @@ def handle_logout():
     state = 'base'
 
 
-# TODO delete chats where the user is blocked
 def hanlde_block():
     temp = input('-\tFind person you want to block using phone number(p) or username(u)?\t')
     while temp not in ['p', 'u']:
@@ -179,39 +178,36 @@ def handle_find_user():
 
 
 def handle_find_chat():
+    width = 16
     temp = input("-\tPlease enter the username of the chat you're looking for:\t")
     cur.execute(f"SELECT * from groupchannelchat WHERE user_name = '{temp}'")
-    chat_id = cur.fetchone()[0]
-    if not chat_id:
+    chat = cur.fetchone()
+    if not chat:
         print('\tChat with this username does not exist!')
         return
+
+    chat_id = chat[0]
     chat_type = get_chat_type(chat_id)
     info = get_group_channel_info(chat_id)
     chat_title = get_chat_title(chat_id, chat_type)
+
+    info = get_group_channel_info(current_chat_id)
     bio = info[3]
     is_private = info[4]
     inv_link = info[5]
     user_name = info[6]
-
     if chat_type == GROUP:
-        print('*\tGroup\t' + chat_title)
-        print('*\tGroup ID ' + str(current_chat_id))
-        print('*\tGroup Creator ' + get_user_name(info[1]))
-        print('*\tBio:\t' + (bio if bio else '-'))
-        print('*\tPrivate:\t' + ('Yes' if is_private else 'No'))
-        print('*\tInvite link:\t' + (inv_link if inv_link else '-'))
-        print('*\tUsername:\t' + (user_name if user_name else '-'))
-
-    elif chat_type == CHANNEL:
-        print('*\tChannel\t' + chat_title)
-        print('*\tChannel ID ' + str(current_chat_id))
-        print('*\tChannel Creator ' + get_user_name(info[1]))
-        print('*\tBio:\t' + (bio if bio else '-'))
-        print('*\tPrivate:\t' + ('Yes' if is_private else 'No'))
-        print('*\tInvite link:\t' + (inv_link if inv_link else '-'))
-        print('*\tUsername:\t' + (user_name if user_name else '-'))
+        print('*\t', 'group title'.center(width, ' ') + '\033[1;36m' + chat_title, '\033[0m')
     else:
-        print('\tChat does not exist!')
+        print('*\t', 'channel title'.center(width, ' ') + '\033[1;36m' + chat_title, '\033[0m')
+    print('*\t', 'chat_id'.center(width, ' ') + '\033[1;36m', str(current_chat_id), '\033[0m')
+    print('*\t', 'creator'.center(width, ' ') + '\033[1;36m', get_user_name(info[1]), '\033[0m')
+    print('*\t', 'description'.center(width, ' ') + '\033[1;36m', (bio if bio else '-'), '\033[0m')
+    print('*\t',
+          'is_private'.center(width, ' ') + ('\033[1;32mYes\033[0m' if is_private else '\033[1;31mNo\033[0m'))
+    print('*\t', 'invite_link'.center(width, ' ') + '\033[1;36m' + (inv_link if inv_link else '-'), '\033[0m')
+    print('*\t', 'user_name'.center(width, ' ') + '\033[1;36m', (('@' + user_name) if user_name else '-'),
+          '\033[0m')
 
 
 # profile menu commands
@@ -268,8 +264,8 @@ def handle_delete_me():
 def handle_join_chat():
     temp = input('-\tFind the chat using username(u) or the invite link(i)?\t')
     while temp not in ['u', 'i']:
-        print("\t\033[0;31mPlease enter either 'i' or 'u'.\033[0m")
-        temp = input('-\tFind the chat using username(u) or the invite link(i)?\t')
+        print("\tPlease enter either 'i' or 'u'.\033[0m")
+        temp = input('\t\033[0;31mFind the chat using username(u) or the invite link(i)?\t')
 
     if temp == 'i':
         temp = input('-\tPlease enter the invite link of the chat:\t')
@@ -281,6 +277,7 @@ def handle_join_chat():
             if not cur.fetchone():
                 cur.execute(f"INSERT INTO member VALUES({user_id}, {chat_id}, DEFAULT, NULL, NULL)")
                 conn.commit()
+                handle_go_to_chat(chat_id)
             else:
                 print('\t\033[0;31mYou are banned from this chat!\033[0m')
                 return
@@ -289,7 +286,7 @@ def handle_join_chat():
             return
     else:
         temp = input('-\tPlease enter the username of the chat:\t')
-        cur.execute(f"SELECT * from groupchannelchat WHERE user_name = '{temp}'")
+        cur.execute(f"SELECT * from groupchannelchat WHERE user_name = '{temp}' and is_private=FALSE")
         dest = cur.fetchone()
         if dest:
             chat_id = dest[0]
@@ -297,11 +294,12 @@ def handle_join_chat():
             if not cur.fetchone():
                 cur.execute(f"INSERT INTO member VALUES({user_id}, {chat_id}, DEFAULT, NULL, NULL)")
                 conn.commit()
+                handle_go_to_chat(chat_id)
             else:
                 print('\t\033[0;31mYou are banned from this chat!\033[0m')
                 return
         else:
-            print('\t\033[0;31mChat with this username does not exist!\033[0m')
+            print('\t\033[0;31mA public chat with this username does not exist!\033[0m')
             return
 
 
@@ -309,6 +307,11 @@ def get_chat_type(chat_id):
     cur.execute(f"SELECT chat_type from chat WHERE id={chat_id}")
     t = cur.fetchone()[0]
     return PRIVATE if t == 'P' else GROUP if t == 'G' else CHANNEL if t == 'C' else CHAT_ERROR
+
+
+def get_chat_creator_id(chat_id):
+    cur.execute(f"SELECT creator from groupchannel WHERE id={chat_id}")
+    return cur.fetchone()[0]
 
 
 def get_user_info(uid):
@@ -325,8 +328,7 @@ def get_user_name(uid):
 
 def get_pv_member(chat_id):
     member_id = get_pv_member_id(chat_id)
-    member_tuple = get_user_info(member_id)
-    return f'{member_tuple[2]} {member_tuple[3] or ""}'
+    return get_user_name(member_id)
 
 
 def get_pv_member_id(chat_id):
@@ -346,7 +348,7 @@ def get_chat_title(chat_id, chat_type=None):
         chat_type = get_chat_type(chat_id)
     if chat_type == PRIVATE:
         return get_pv_member(chat_id)
-    return get_group_channel_title(chat_id)
+    return get_group_channel_title(chat_id).strip()
 
 
 def get_group_channel_info(chat_id):
@@ -389,13 +391,16 @@ def handle_show_my_chats():
             print('\t\033[1;34m', str(id), '\033[0m\t-\t\033[1;34m', get_chat_title(id, CHANNEL), '\033[0m')
 
 
-def handle_go_to_chat():
+def handle_go_to_chat(destination=None):
     global disabled_commands, current_permissions, state, current_chat_id
     temp_dis = set()
-    temp = input('-\tEnter your destination chat ID: ')
-    while not temp:
-        temp = input(
-            '\t\033[0;31mChat ID cannot be empty: \033[0m').strip()
+    if not destination:
+        temp = input('-\tEnter your destination chat ID: ')
+        while not temp:
+            temp = input(
+                '\t\033[0;31mChat ID cannot be empty: \033[0m').strip()
+    else:
+        temp = destination
     cur.execute(f"SELECT chat from member WHERE chat='{temp}' and usr={user_id}")
     if not cur.fetchone():
         print('\t\033[0;31mYou are not a member of this chat ID\033[0m')
@@ -403,7 +408,7 @@ def handle_go_to_chat():
     current_chat_id = chat_id = temp
     chat_type = get_chat_type(chat_id)
     if chat_type == PRIVATE:
-        disabled_commands = set(('update_info', 'members', 'admins', 'banned_members',))
+        disabled_commands = {'update_info', 'members', 'admins', 'banned_members', 'leave'}
     elif chat_type == GROUP or chat_type == CHANNEL:
         cur.execute(f"SELECT * from administrator WHERE chat='{chat_id}' and usr={user_id}")
         current_permissions = permissions = cur.fetchone()
@@ -424,7 +429,19 @@ def handle_go_to_chat():
                 temp_dis.add('edit_admin')
             if not permissions[8]:
                 temp_dis.add('update_info')
-            disabled_commands = temp_dis
+        else:
+            if chat_type == CHANNEL:
+                temp_dis.add('send_message')
+                temp_dis.add('delete_message')
+                temp_dis.add('edit_message')
+                temp_dis.add('members')
+            temp_dis.add('add_member')
+            temp_dis.add('update_info')
+            temp_dis.add('banned_members')
+            temp_dis.add('admins')
+        if user_id != get_chat_creator_id(chat_id):
+            temp_dis.add('delete')
+        disabled_commands = temp_dis
 
     state = 'inchat_menu'
     print(f'Chatting with: \033[1;34m{get_chat_title(current_chat_id)}\033[0m!')
@@ -597,14 +614,23 @@ def handle_edit_message():
 
 
 def handle_leave():
-    temp = input('\tAre you sure you want to leave this chat?(y/n)')
-    while temp not in ['y', 'n']:
-        print('\tPlease respond with y or n.')
-        temp = input('\tAre you sure you want to leave this chat?(y/n)')
-    temp = True if temp == 'y' else False
+    temp = input('\tAre you sure you want to leave this chat (y/n): ')
+    temp = False if temp == 'n' or not temp else True
     if temp:
         cur.execute(f"DELETE from member WHERE usr={user_id} AND chat={current_chat_id}")
         conn.commit()
+        print('\tYou left the chat')
+    change_menu('chats_menu')()
+
+
+def handle_delete():
+    temp = input('\tAre you sure you want to delete this chat (y/n): ')
+    temp = False if temp == 'n' or not temp else True
+    if temp:
+        cur.execute(f"DELETE from chat WHERE  id={current_chat_id}")
+        conn.commit()
+        print('\tChat was deleted successfully')
+    change_menu('chats_menu')()
 
 
 def handle_chat_info():
@@ -680,6 +706,7 @@ def handle_creating_pv():
             cur.execute(f"INSERT into member values({user_id}, {chat_id}, DEFAULT, null, null)")
             cur.execute(f"INSERT into member values({dest[0]}, {chat_id}, DEFAULT, null, null)")
             conn.commit()
+            handle_go_to_chat(chat_id)
         else:
             print('\t\033[0;31mUser with this phone number does not exist!\033[0m')
             return
@@ -703,21 +730,16 @@ def handle_creating_pv():
 
 def handle_creating_gp_ch(is_group):
     def wrapper():
-        title = input(f"-\tPlease enter the title of your {'group' if is_group else 'channel'}:\t")
+        title = input(f"-\tPlease enter the title of your {'group' if is_group else 'channel'}: ")
         while not title:
-            print("\tTitle can not be empty.")
-            title = input(f"-\tPlease enter the title of your {'group' if is_group else 'channel'}:\t")
-        description = input(
-            f"-\tPlease enter the description of your {'group' if is_group else 'channel'}(optional):\t")
-        is_private = input(f"-\tShall your {'group' if is_group else 'channel'} be private?(y/n):\t")
-        while not is_private or is_private not in ['y', 'n']:
-            print("\tGroup has to be private or not.")
-            is_private = input(f"-\tShall your {'group' if is_group else 'channel'} be private?(y/n):\t")
-        user_name = input(f"-\tPlease enter the username of your {'group' if is_group else 'channel'}(optional):\t")
+            title = input(f"-\t{'group' if is_group else 'channel'} cannot be empty: ").strip()
+        description = input(f"-\tdescribe this {'group' if is_group else 'channel'} in a few words (optional): ")
+        is_private = input(f"-\tShall your {'group' if is_group else 'channel'} be private (y/n): ")
+        user_name = input(f"-\tPlease enter the username of your {'group' if is_group else 'channel'} (optional): ")
 
         gp_id = 0
         creator = user_id
-        is_private = True if is_private == 'y' else False
+        is_private = False if is_private == 'n' or not is_private else True
         inv_link = 'chiz.me/' + uuid.uuid4().hex[:10]
         chat_type = 'G' if is_group else 'C'
         description = f"'{description}'" if description else 'null'
@@ -726,6 +748,8 @@ def handle_creating_gp_ch(is_group):
         cur.execute(
             f"INSERT into groupchannelchat values({gp_id}, {creator}, '{title}', {description}, {is_private}, '{inv_link}', {user_name}, '{chat_type}')")
         conn.commit()
+        cur.execute('select max(id) from groupchannelchat')
+        handle_go_to_chat(cur.fetchone()[0])
 
     return wrapper
 
@@ -997,7 +1021,7 @@ def change_menu(new_state, reset=True):
 def handle_help():
     for key, value in available_commands[state].items():
         if key not in disabled_commands:
-            print(f'\t\033[1m{key.center(10, " ")}\033[0m\033[1m - \033[0m{value[1]}')
+            print(f'\t\033[1m{key.center(17, " ")}\033[0m\033[1m - \033[0m{value[1]}')
 
 
 def handle_state_transitions():
@@ -1045,6 +1069,7 @@ inchat_menu_commands = {
     'admins': (change_menu('admins_menu', False), 'show messages of this chat'),
     'info': (handle_chat_info, 'show information about this chat'),
     'update_info': (handle_update_info, 'edit the information about this chat'),
+    'delete': (handle_delete, 'delete this chat'),
     'leave': (handle_leave, 'leave this chat'),
     'back': (change_menu('chats_menu'), 'go back to chats menu'),
     'help': (handle_help, 'print available commands'),
@@ -1106,8 +1131,16 @@ available_commands = {
 def handle_command(command):
     global user_id
     try:
-        if command not in disabled_commands:
+        if current_chat_id:
+            cur.execute(f'select * from member where chat={current_chat_id} and usr={user_id}')
+            if not cur.fetchone():
+                print('\t\033[0;31mThis chat is no longer available\033[0m')
+                change_menu('chats_menu')()
+                return
+        if command not in disabled_commands and command in available_commands[state]:
             available_commands[state][command][0]()
+        else:
+            print('\t\033[0;31mCommand not available\033[0m')
     except Exception as e:
         print(e)
 
@@ -1116,6 +1149,7 @@ if __name__ == '__main__':
     while True:
         handle_state_transitions()
         handle_command(input('$ ').strip())
-        print('\n' + '-' * 40, '\n')
+        print('-' * 40)
+        conn.rollback()
 
-# TODO Cleaning up UI
+# TODO pin message in groups or channels -> show, pin, unpin
