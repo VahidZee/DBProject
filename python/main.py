@@ -117,8 +117,9 @@ def hanlde_block():
     else:
         temp = input('-\tEnter the username:\t')
         cur.execute(f"SELECT * from usr WHERE user_name = '{temp}'")
-        dest = cur.fetchone()[0]
+        dest = cur.fetchone()
         if dest:
+            dest = dest[0]
             cur.execute(f"INSERT into block values({user_id}, {dest})")
             conn.commit()
         else:
@@ -134,8 +135,9 @@ def handle_find_user():
     if temp == 'p':
         temp = input('-\tEnter the phone number:\t')
         cur.execute(f"SELECT * from userperson WHERE phone = '{temp}'")
-        dest = cur.fetchone()[0]
+        dest = cur.fetchone()
         if dest:
+            dest = dest[0]
             info = get_user_info(dest)
             is_bot = info[5]
             chat_title = get_user_name(dest)
@@ -155,8 +157,9 @@ def handle_find_user():
     else:
         temp = input('-\tEnter the username:\t')
         cur.execute(f"SELECT * from usr WHERE user_name = '{temp}'")
-        dest = cur.fetchone()[0]
+        dest = cur.fetchone()
         if dest:
+            dest = dest[0]
             info = get_user_info(dest)
             is_bot = info[5]
             chat_title = get_user_name(dest)
@@ -321,10 +324,15 @@ def get_user_name(uid):
 
 
 def get_pv_member(chat_id):
-    cur.execute(f"SELECT usr from member WHERE usr != {user_id} and chat = {chat_id}")
-    member_id = cur.fetchone()[0]
+    member_id = get_pv_member_id(chat_id)
     member_tuple = get_user_info(member_id)
     return f'{member_tuple[2]} {member_tuple[3] or ""}'
+
+
+def get_pv_member_id(chat_id):
+    cur.execute(f"SELECT usr from member WHERE usr != {user_id} and chat = {chat_id}")
+    member_id = cur.fetchone()[0]
+    return member_id
 
 
 def get_group_channel_title(chat_id):
@@ -420,10 +428,6 @@ def handle_go_to_chat():
 
     state = 'inchat_menu'
     print(f'Chatting with: \033[1;34m{get_chat_title(current_chat_id)}\033[0m!')
-
-
-def handle_leave_chat():
-    pass
 
 
 def print_message(message):
@@ -616,22 +620,25 @@ def handle_chat_info():
         if chat_type == GROUP:
             print('*\t', 'group title'.center(width, ' ') + '\033[1;36m' + chat_title, '\033[0m')
         else:
-            print('*\t', 'channel title'.center(width, ' ') + '\033[1;36m' + chat_title,  '\033[0m')
+            print('*\t', 'channel title'.center(width, ' ') + '\033[1;36m' + chat_title, '\033[0m')
         print('*\t', 'chat_id'.center(width, ' ') + '\033[1;36m', str(current_chat_id), '\033[0m')
         print('*\t', 'creator'.center(width, ' ') + '\033[1;36m', get_user_name(info[1]), '\033[0m')
         print('*\t', 'description'.center(width, ' ') + '\033[1;36m', (bio if bio else '-'), '\033[0m')
         print('*\t',
               'is_private'.center(width, ' ') + ('\033[1;32mYes\033[0m' if is_private else '\033[1;31mNo\033[0m'))
         print('*\t', 'invite_link'.center(width, ' ') + '\033[1;36m' + (inv_link if inv_link else '-'), '\033[0m')
-        print('*\t', 'user_name'.center(width, ' ') + '\033[1;36m', (('@' + user_name) if user_name else '-'), '\033[0m')
+        print('*\t', 'user_name'.center(width, ' ') + '\033[1;36m', (('@' + user_name) if user_name else '-'),
+              '\033[0m')
 
     elif chat_type == PRIVATE:
-        info = get_user_info(user_id)
+        member_id = get_pv_member_id(current_chat_id)
+        info = get_user_info(member_id)
         is_bot = info[5]
+        chat_title = get_user_name(member_id)
         if is_bot:
             print('*\t', 'bot'.center(width, ' ') + '\033[1;36m' + chat_title, '\033[0m')
         else:
-            print('*\t', 'person'.center(width, ' ') + '\033[1;36m' + chat_title,  '\033[0m')
+            print('*\t', 'person'.center(width, ' ') + '\033[1;36m' + chat_title, '\033[0m')
         print('*\t', 'user_id'.center(width, ' ') + '\033[1;36m', str(info[0]), '\033[0m')
         print('*\t', 'description'.center(width, ' ') + '\033[1;36m', (info[4] if info[4] else '-'), '\033[0m')
         print('*\t', 'user_name'.center(width, ' ') + '\033[1;36m', (('@' + info[1]) if info[1] else '-'), '\033[0m')
@@ -679,8 +686,9 @@ def handle_creating_pv():
     else:
         temp = input('-\tEnter the username:\t')
         cur.execute(f"SELECT * from usr WHERE user_name = '{temp}'")
-        dest = cur.fetchone()[0]
+        dest = cur.fetchone()
         if dest:
+            dest = dest[0]
             cur.execute(f"INSERT into chat values(DEFAULT, 'P')")
             conn.commit()
             cur.execute("SELECT max(id) FROM chat")
@@ -1020,7 +1028,6 @@ menu_commands = {
 chats_menu_commands = {
     'show': (handle_show_my_chats, 'show a list of your chats'),
     'goto': (handle_go_to_chat, 'go to a specific chat'),
-    'leave': (handle_leave_chat, 'go to chat menu'),
     'create': (change_menu('create_chat'), 'create a new chat'),
     'join': (handle_join_chat, 'join an existing chat'),
     'back': (change_menu('menu'), 'back to main menu'),
