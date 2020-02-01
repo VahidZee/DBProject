@@ -263,7 +263,7 @@ def handle_go_to_chat():
                 temp_dis.add('members')
             if not permissions[7]:
                 temp_dis.add('promote')
-                temp_dis.add( 'unpromote')
+                temp_dis.add('unpromote')
                 temp_dis.add('edit_admin')
             if not permissions[8]:
                 temp_dis.add('update_info')
@@ -500,23 +500,19 @@ def handle_chat_info():
             print('*\tUser description:\t' + (info[4] if info[4] else '-'))
             print('*\tUser username:\t' + (info[1] if info[1] else '-'))
     else:
-        print("ERROR!")
+        print('\t\033[0;31mWrong chat type\033[0m')
 
 
-## TODO cleaning up UI
 def handle_update_info():
     title = input("-\tPlease update the title:\t")
     while not title:
-        print("\tTitle can not be empty.")
-        title = input(f"-\tPlease update the title:\t")
-    description = input("-\tPlease update the description(optional):\t")
-    is_private = input("-\tShall your chat be private?(y/n):\t")
-    while not is_private or is_private not in ['y', 'n']:
-        print("\tChat has to be private or not.")
-        is_private = input(f"-\tShall your chat be private?(y/n):\t")
-    user_name = input("-\tPlease enter the username(optional):\t")
+        title = input(
+            '\t\033[0;31mTitle cannot be empty: \033[0m').strip()
+    description = input("-\tupdate the description(optional):\t")
+    is_private = input("-\tIs this chat  private (y/n):")
+    user_name = input("-\tenter the chat's username (optional): ")
 
-    is_private = True if is_private == 'y' else False
+    is_private = False if is_private == 'n' or not is_private else True
     description = f"'{description}'" if description else 'null'
     user_name = f"'{user_name}'" if user_name else 'null'
 
@@ -975,4 +971,4 @@ if __name__ == '__main__':
         handle_command(input('$ ').strip())
         print('\n' + '-' * 40, '\n')
 
-# TODO Join, Block, Add admin, remove admin, Find user, Find chat, Cleaning up UI
+# TODO Join, Block, Find user, Find chat, Cleaning up UI
