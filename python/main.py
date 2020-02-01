@@ -150,7 +150,43 @@ def handle_delete_me():
 
 # chats menu commands
 def handle_join_chat():
-    pass
+    temp = input('-\tFind the chat using username(u) or the invite link(i)?\t')
+    while temp not in ['u', 'i']:
+        print("\t\033[0;31mPlease enter either 'i' or 'u'.\033[0m")
+        temp = input('-\tFind the chat using username(u) or the invite link(i)?\t')
+
+    if temp == 'i':
+        temp = input('-\tPlease enter the invite link of the chat:\t')
+        cur.execute(f"SELECT * from groupchannelchat WHERE inv_link = '{temp}'")
+        dest = cur.fetchone()
+        if dest:
+            chat_id = dest[0]
+            cur.execute(f"SELECT * from banned WHERE chat = {chat_id} AND usr = {user_id}")
+            if not cur.fetchone():
+                cur.execute(f"INSERT INTO member VALUES({user_id}, {chat_id}, DEFAULT, NULL, NULL)")
+                conn.commit()
+            else:
+                print('\t\033[0;31mYou are banned from this chat!\033[0m')
+                return
+        else:
+            print('\t\033[0;31mChat with this invite link does not exist!\033[0m')
+            return
+    else:
+        temp = input('-\tPlease enter the username of the chat:\t')
+        cur.execute(f"SELECT * from groupchannelchat WHERE user_name = '{temp}'")
+        dest = cur.fetchone()
+        if dest:
+            chat_id = dest[0]
+            cur.execute(f"SELECT * from banned WHERE chat = {chat_id} AND usr = {user_id}")
+            if not cur.fetchone():
+                cur.execute(f"INSERT INTO member VALUES({user_id}, {chat_id}, DEFAULT, NULL, NULL)")
+                conn.commit()
+            else:
+                print('\t\033[0;31mYou are banned from this chat!\033[0m')
+                return
+        else:
+            print('\t\033[0;31mChat with this username does not exist!\033[0m')
+            return
 
 
 def get_chat_type(chat_id):
