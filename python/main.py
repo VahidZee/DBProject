@@ -98,6 +98,119 @@ def handle_logout():
     state = 'base'
 
 
+# TODO delete chats where the user is blocked
+def hanlde_block():
+    temp = input('-\tFind person you want to block using phone number(p) or username(u)?\t')
+    while temp not in ['p', 'u']:
+        print('\tPlease enter p or u.')
+        temp = input('-\tFind person you want to block using phone number(p) or username(u)?\t')
+    if temp == 'p':
+        temp = input('-\tEnter the phone number:\t')
+        cur.execute(f"SELECT * from userperson WHERE phone = '{temp}'")
+        dest = cur.fetchone()
+        if dest:
+            cur.execute(f"INSERT into block values({user_id}, {dest[0]})")
+            conn.commit()
+        else:
+            print('\t\033[0;31mUser with this phone number does not exist!\033[0m')
+            return
+    else:
+        temp = input('-\tEnter the username:\t')
+        cur.execute(f"SELECT * from usr WHERE user_name = '{temp}'")
+        dest = cur.fetchone()[0]
+        if dest:
+            cur.execute(f"INSERT into block values({user_id}, {dest})")
+            conn.commit()
+        else:
+            print('\t\033[0;31mUser with this username does not exist!\033[0m')
+            return
+
+
+def handle_find_user():
+    temp = input('-\tFind person using phone number(p) or username(u)?\t')
+    while temp not in ['p', 'u']:
+        print('\tPlease enter p or u.')
+        temp = input('-\tFind person you want to block using phone number(p) or username(u)?\t')
+    if temp == 'p':
+        temp = input('-\tEnter the phone number:\t')
+        cur.execute(f"SELECT * from userperson WHERE phone = '{temp}'")
+        dest = cur.fetchone()[0]
+        if dest:
+            info = get_user_info(dest)
+            is_bot = info[5]
+            chat_title = get_user_name(dest)
+            if is_bot:
+                print('*\tBot\t' + chat_title)
+                print('*\tBot ID ' + str(info[0]))
+                print('*\tBot description:\t' + (info[4] if info[4] else '-'))
+                print('*\tBot username:\t' + (info[1] if info[1] else '-'))
+            else:
+                print('*\tUser\t' + chat_title)
+                print('*\tUser ID ' + str(info[0]))
+                print('*\tUser description:\t' + (info[4] if info[4] else '-'))
+                print('*\tUser username:\t' + (info[1] if info[1] else '-'))
+        else:
+            print('\t\033[0;31mUser with this phone number does not exist!\033[0m')
+            return
+    else:
+        temp = input('-\tEnter the username:\t')
+        cur.execute(f"SELECT * from usr WHERE user_name = '{temp}'")
+        dest = cur.fetchone()[0]
+        if dest:
+            info = get_user_info(dest)
+            is_bot = info[5]
+            chat_title = get_user_name(dest)
+            if is_bot:
+                print('*\tBot\t' + chat_title)
+                print('*\tBot ID ' + str(info[0]))
+                print('*\tBot description:\t' + (info[4] if info[4] else '-'))
+                print('*\tBot username:\t' + (info[1] if info[1] else '-'))
+            else:
+                print('*\tUser\t' + chat_title)
+                print('*\tUser ID ' + str(info[0]))
+                print('*\tUser description:\t' + (info[4] if info[4] else '-'))
+                print('*\tUser username:\t' + (info[1] if info[1] else '-'))
+        else:
+            print('\t\033[0;31mUser with this username does not exist!\033[0m')
+            return
+
+
+def handle_find_chat():
+    temp = input("-\tPlease enter the username of the chat you're looking for:\t")
+    cur.execute(f"SELECT * from groupchannelchat WHERE user_name = '{temp}'")
+    chat_id = cur.fetchone()[0]
+    if not chat_id:
+        print('\tChat with this username does not exist!')
+        return
+    chat_type = get_chat_type(chat_id)
+    info = get_group_channel_info(chat_id)
+    chat_title = get_chat_title(chat_id, chat_type)
+    bio = info[3]
+    is_private = info[4]
+    inv_link = info[5]
+    user_name = info[6]
+
+    if chat_type == GROUP:
+        print('*\tGroup\t' + chat_title)
+        print('*\tGroup ID ' + str(current_chat_id))
+        print('*\tGroup Creator ' + get_user_name(info[1]))
+        print('*\tBio:\t' + (bio if bio else '-'))
+        print('*\tPrivate:\t' + ('Yes' if is_private else 'No'))
+        print('*\tInvite link:\t' + (inv_link if inv_link else '-'))
+        print('*\tUsername:\t' + (user_name if user_name else '-'))
+
+    elif chat_type == CHANNEL:
+        print('*\tChannel\t' + chat_title)
+        print('*\tChannel ID ' + str(current_chat_id))
+        print('*\tChannel Creator ' + get_user_name(info[1]))
+        print('*\tBio:\t' + (bio if bio else '-'))
+        print('*\tPrivate:\t' + ('Yes' if is_private else 'No'))
+        print('*\tInvite link:\t' + (inv_link if inv_link else '-'))
+        print('*\tUsername:\t' + (user_name if user_name else '-'))
+    else:
+        print('\tChat does not exist!')
+
+
 # profile menu commands
 def handle_get_me():
     print('Your user information: ')
@@ -909,6 +1022,9 @@ base_commands = {
 menu_commands = {
     'logout': (handle_logout, 'logout of your account'),
     'chats': (change_menu('chats_menu'), 'go to chat menu'),
+    'block': (hanlde_block, 'block a user'),
+    'find_user': (handle_find_user, 'find the info of a user'),
+    'find_chat': (handle_find_chat, 'find the info of a chat'),
     'profile': (change_menu('profile_menu'), 'see and change your profile information'),
     'help': (handle_help, 'print available commands'),
 }
@@ -1007,4 +1123,4 @@ if __name__ == '__main__':
         handle_command(input('$ ').strip())
         print('\n' + '-' * 40, '\n')
 
-# TODO Join, Block, Find user, Find chat, Cleaning up UI
+# TODO Cleaning up UI
